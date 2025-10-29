@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Trang Chủ - Luyện Thi IELTS
+{% endblock %}
+
+
+{% block content %}
+<header class="bg-white shadow-lg rounded-lg p-8 md:p-12 text-center mb-8">
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Chào mừng đến với IELTSMaster</h1>
+    <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">Nền tảng luyện thi Reading & Listening hàng
+        đầu. Hãy
+        chọn một kỹ năng để bắt đầu.</p>
+</header>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <!-- SỬA LẠI HREF -->
+    <a href="{{ url_for('test.choose_test', category='Reading') }}"
+        class="block bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition duration-300">
+        <div class="p-8">
+            <h2 class="text-3xl font-bold text-blue-600 mb-3">Luyện Reading</h2>
+            <p class="text-gray-600 text-base">Truy cập hàng trăm bài đọc theo chuẩn format thi thật. Cải thiện
+                tốc độ
+                và độ chính xác của bạn.</p>
+        </div>
+        <div class="bg-blue-50 px-8 py-4">
+            <span class="font-medium text-blue-700">Bắt đầu ngay &rarr;</span>
+        </div>
+    </a>
+
+    <!-- SỬA LẠI HREF -->
+    <a href="{{ url_for('test.choose_test', category='Listening') }}"
+        class="block bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition duration-300">
+        <div class="p-8">
+            <h2 class="text-3xl font-bold text-green-600 mb-3">Luyện Listening</h2>
+            <p class="text-gray-600 text-base">Nghe các bài audio đa dạng về chủ đề và giọng đọc. Rèn luyện kỹ
+                năng nghe
+                hiểu chi tiết và ý chính.</p>
+        </div>
+        <div class="bg-green-50 px-8 py-4">
+            <span class="font-medium text-green-700">Bắt đầu ngay &rarr;</span>
+        </div>
+    </a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Thanh chia layout của trang Reading */
+#reading-splitter {
+    width: 8px;
+    background-color: #e2e8f0;
+    cursor: col-resize;
+    transition: background-color 0.2s;
+}
+
+#reading-splitter:hover {
+    background-color: #cbd5e1;
+}

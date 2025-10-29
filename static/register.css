@@ -1,0 +1,6 @@
+.flash-messages {
+    list-style: none;
+    padding: 0;
+    color: red;
+    font-weight: bold;
+}

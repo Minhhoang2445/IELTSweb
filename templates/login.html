@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Đăng Nhập - Luyện Thi IELTS
+{% endblock %}
+
+
+{% block content %}
+<div class="flex justify-center items-center min-h-[80vh]">
+    <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
+        <h2 class="text-3xl font-bold text-center text-blue-600 mb-6">Đăng nhập</h2>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <ul class="list-disc pl-5">
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-5">
+            <div>
+                <label for="email" class="block text-gray-700 font-medium mb-1">Email</label>
+                <input type="email" id="email" name="email" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label for="password" class="block text-gray-700 font-medium mb-1">Mật khẩu</label>
+                <input type="password" id="password" name="password" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+
+            <div class="flex justify-between items-center text-sm">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="remember" class="accent-blue-600">
+                    <span>Ghi nhớ đăng nhập</span>
+                </label>
+                <a href="#" class="text-blue-600 hover:underline">Quên mật khẩu?</a>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+                Đăng nhập
+            </button>
+        </form>
+
+        <p class="text-center text-gray-600 text-sm mt-6">
+            Chưa có tài khoản?
+            <a href="{{ url_for('auth.register') }}" class="text-blue-600 font-medium hover:underline">Đăng ký ngay</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Admin Panel
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen bg-gray-100 font-sans">
+
+    <!-- Sidebar (Giữ nguyên) -->
+    <aside class="w-64 bg-indigo-700 text-white p-6 space-y-6 flex-shrink-0">
+        <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+        <nav class="space-y-3">
+            <a href="{{ url_for('admin.admin_panel', section='users') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition">👥 Quản lý người dùng</a>
+            <a href="{{ url_for('admin.admin_panel', section='add_test') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition">📝 Thêm đề mới</a>
+            <a href="{{ url_for('index') }}" class="block py-2 px-3 rounded hover:bg-indigo-600 transition">🏠 Về
+                trang chủ</a>
+            <a href="{{ url_for('admin.admin_panel', section='view_tests') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition">📚 Xem các đề đã thêm</a>
+            <a href="{{ url_for('auth.logout') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition text-red-300">🚪 Đăng xuất</a>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+
+        <!-- ===== KHỐI FLASH (Giữ nguyên) ===== -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for category, message in messages %}
+            {% set alert_class = 'bg-red-100 border-red-400 text-red-700' if category == 'error' else 'bg-green-100
+            border-green-400 text-green-700' %}
+            <div class="{{ alert_class }} border px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- ===== PHẦN QUẢN LÝ USER (Đầy đủ) ===== -->
+        {% if section == 'users' %}
+        <section id="users">
+            <!-- ... (Code bảng user y hệt) ... -->
+            <h2 class="text-2xl font-semibold mb-4">👤 Danh sách người dùng</h2>
+            {% if users %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-gray-300 bg-white rounded-lg shadow">
+                    <thead class="bg-indigo-100">
+                        <tr>
+                            <th class="px-4 py-2 border">Tên</th>
+                            <th class="px-4 py-2 border">Email</th>
+                            <th class="px-4 py-2 border">Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 border">{{ user.name }}</td>
+                            <td class="px-4 py-2 border">{{ user.email }}</td>
+                            <td class="px-4 py-2 border">{{ user.role }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-600 italic">Chưa có người dùng nào được đăng ký.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <!-- ===== PHẦN THÊM ĐỀ MỚI (Đầy đủ) ===== -->
+        {% if section == 'add_test' %}
+        <section id="add-test">
+            <h2 class="text-2xl font-semibold mb-4">📝 Thêm đề mới</h2>
+            <!-- (SỬA) Thêm enctype -->
+            <form method="POST" action="{{ url_for('admin.admin_panel') }}" enctype="multipart/form-data"
+                class="bg-white p-6 rounded-lg shadow space-y-6">
+                <input type="hidden" name="form_type" value="add_test">
+
+                <!-- 1. Thông tin chung về Đề Thi -->
+                <fieldset class="border rounded p-4">
+                    <legend class="text-xl font-semibold text-indigo-700 px-2">1. Thông tin đề thi</legend>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Tên đề (Title):</label>
+                            <input type="text" name="title"
+                                class="w-full border rounded px-3 py-2 focus:ring focus:ring-indigo-200" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Loại (Category):</label>
+                            <!-- (SỬA) Thêm id="category-select" -->
+                            <select id="category-select" name="category"
+                                class="w-full border rounded px-3 py-2 focus:ring focus:ring-indigo-200" required>
+                                <option value="Reading">Reading</option>
+                                <option value="Listening">Listening</option>
+                            </select>
+                        </div>
+                        <!-- (SỬA) Trường upload audio đặt ở đây -->
+                        <div id="audio-upload-field" class="hidden">
+                            <label class="block text-gray-700 mb-2">File Audio (MP3):</label>
+                            <input type="file" name="audio_file" accept=".mp3"
+                                class="w-full border rounded px-3 py-2 focus:ring focus:ring-indigo-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <p class="text-xs text-gray-500 mt-1">Chỉ chấp nhận file .mp3. Sẽ được lưu vào
+                                /static/audio/</p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- 2. Thông tin Đoạn văn -->
+                <!-- (SỬA) Thêm id="passage-field" -->
+                <fieldset id="passage-field" class="border rounded p-4">
+                    <legend class="text-xl font-semibold text-indigo-700 px-2">2. Đoạn văn Passage</legend>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Nội dung đoạn văn:</label>
+                        <textarea name="passage_text" rows="8"
+                            class="w-full border rounded px-3 py-2 focus:ring focus:ring-indigo-200"
+                            placeholder="Dán nội dung bài đọc Reading vào đây..."></textarea>
+                    </div>
+                </fieldset>
+
+                <!-- 3. Vùng chứa các câu hỏi động -->
+                <fieldset class="border rounded p-4">
+                    <legend class="text-xl font-semibold text-indigo-700 px-2">3. Câu hỏi (Questions)</legend>
+                    <div id="questions-container" class="space-y-6">
+                        <!-- Các câu hỏi động sẽ xuất hiện ở đây -->
+                    </div>
+                    <div class="mt-6 flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <label for="question-type-select" class="font-medium">Chọn loại câu hỏi:</label>
+                        <select id="question-type-select"
+                            class="border rounded px-3 py-2 focus:ring focus:ring-indigo-200">
+                            <option value="fill_in_blank">Điền vào chỗ trống</option>
+                            <option value="multiple_choice">Trắc nghiệm (Động)</option>
+                            <option value="true_false_not_given">True/False/NG</option>
+                            <option value="yes_no_not_given">Yes/No/NG</option>
+                            <option value="matching">Matching (Nối)</option>
+                        </select>
+                        <button type="button" id="add-question-btn"
+                            class="bg-green-500 text-white font-medium px-4 py-2 rounded hover:bg-green-600 transition">
+                            + Thêm câu hỏi
+                        </button>
+                    </div>
+                </fieldset>
+
+                <!-- 4. Nút Submit chính -->
+                <div class="text-right"> <button type="submit"
+                        class="bg-indigo-600 text-white font-medium px-6 py-2 rounded hover:bg-indigo-700 transition">
+                        Lưu đề thi
+                    </button> </div>
+            </form>
+        </section>
+        {% endif %}
+
+        <!-- ===== PHẦN XEM TEST (Đầy đủ) ===== -->
+        {% if section == 'view_tests' %}
+        <section id="view-tests">
+            <!-- ... (Code xem test y hệt) ... -->
+            <h2 class="text-2xl font-semibold mb-4">📚 Danh sách đề thi đã thêm</h2>
+            {% if tests %}
+            <div class="bg-white rounded-lg shadow p-4">
+                <ul class="space-y-3">
+                    {% for test in tests %}
+                    <li class="border-b pb-2">
+                        <h3 class="text-lg font-medium text-indigo-700">{{ test.title }}</h3>
+                        <p class="text-sm text-gray-600">Loại: {{ test.category }}</p>
+                        <p class="text-sm text-gray-500">
+                            Số đoạn văn: {{ test.passages | length }}
+                            <!-- Có thể thêm nút Xem chi tiết/Sửa/Xóa ở đây -->
+                        </p>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <p class="text-gray-600 italic">Chưa có đề thi nào được thêm vào database.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+
+<!-- ===== JAVASCRIPT LOGIC (ĐÃ SỬA LẠI CẤU TRÚC) ===== -->
+<script>
+    // -------------------------------------------------------------------
+    // CÁC HÀM TRỢ GIÚP (Helpers) - Không đổi
+    // -------------------------------------------------------------------
+    function removeThisQuestion(buttonElement) { /* ... Giữ nguyên ... */ }
+    function updateQuestionNumbers() { /* ... Giữ nguyên ... */ }
+    function updateAddButtonState() { /* ... Giữ nguyên ... */ }
+
+    // Hàm Xóa câu hỏi
+    function removeThisQuestion(buttonElement) {
+        buttonElement.closest('.question-block').remove();
+        updateQuestionNumbers();
+        updateAddButtonState();
+    }
+
+    // Hàm Cập nhật số thứ tự
+    function updateQuestionNumbers() {
+        const container = document.getElementById('questions-container');
+        if (!container) return;
+        const allQuestionBlocks = container.querySelectorAll('.question-block');
+        allQuestionBlocks.forEach((block, index) => {
+            const label = block.querySelector('.question-label');
+            if (label) {
+                label.textContent = `Câu hỏi ${index + 1}`;
+            }
+        });
+    }
+
+    // Hàm kiểm tra 40 câu
+    function updateAddButtonState() {
+        const container = document.getElementById('questions-container');
+        if (!container) return;
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const currentCount = container.querySelectorAll('.question-block').length;
+        const MAX_QUESTIONS_FRONTEND = 40;
+
+        if (currentCount >= MAX_QUESTIONS_FRONTEND) {
+            addQuestionBtn.disabled = true;
+            addQuestionBtn.textContent = 'Đã đạt tối đa 40 câu';
+            addQuestionBtn.classList.add('bg-gray-400', 'hover:bg-gray-400');
+            addQuestionBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+        } else {
+            addQuestionBtn.disabled = false;
+            addQuestionBtn.textContent = '+ Thêm câu hỏi';
+            addQuestionBtn.classList.remove('bg-gray-400', 'hover:bg-gray-400');
+            addQuestionBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+        }
+    }
+
+
+    // -------------------------------------------------------------------
+    // CÁC HÀM "CON" (để thêm lựa chọn, thêm câu hỏi con) - Không đổi
+    // -------------------------------------------------------------------
+    let mcOptionCount = 0;
+    function addMcOption(buttonElement, questionId) { /* ... Giữ nguyên ... */ }
+    let subQuestionCount = 0;
+    function addMatchingSubQuestion(buttonElement, questionId) { /* ... Giữ nguyên ... */ }
+
+    function addMcOption(buttonElement, questionId) {
+        mcOptionCount++;
+        const container = buttonElement.previousElementSibling;
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'flex items-center space-x-2';
+        optionDiv.innerHTML = `
+            <input type="text" name="questions[${questionId}][options][option_${mcOptionCount}]" class="w-full border rounded px-3 py-2 text-sm" placeholder="Nội dung lựa chọn (ví dụ: A. ...)">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm">Xóa</button>
+        `;
+        container.appendChild(optionDiv);
+    }
+
+    function addMatchingSubQuestion(buttonElement, questionId) {
+        subQuestionCount++;
+        const container = buttonElement.previousElementSibling;
+        const subQuestionDiv = document.createElement('div');
+        subQuestionDiv.className = 'flex items-center space-x-2 bg-gray-50 p-2 rounded';
+        subQuestionDiv.innerHTML = `
+            <input type="text" name="questions[${questionId}][sub_questions][sq_${subQuestionCount}][query]" class="w-1/3 border rounded px-3 py-2 text-sm" placeholder="Câu hỏi (ví dụ: Đoạn A)">
+            <input type="text" name="questions[${questionId}][sub_questions][sq_${subQuestionCount}][answer]" class="w-2/3 border rounded px-3 py-2 text-sm" placeholder="Đáp án (ví dụ: iii)">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm">Xóa</button>
+        `;
+        container.appendChild(subQuestionDiv);
+    }
+
+
+    // -------------------------------------------------------------------
+    // CÁC HÀM "VẼ" KHUÔN MẪU (Templates) - Không đổi
+    // -------------------------------------------------------------------
+    function createQuestionShell(id, type, typeLabel) { /* ... Giữ nguyên ... */ }
+    function createSimpleQuestionHTML(id, type) { /* ... Giữ nguyên ... */ }
+    function createMultipleChoiceHTML(id) { /* ... Giữ nguyên ... */ }
+    function createMatchingHTML(id) { /* ... Giữ nguyên ... */ }
+
+    function createQuestionShell(id, type, typeLabel) {
+        return `
+            <input type="hidden" name="questions[${id}][type]" value="${type}">
+            <div class="flex justify-between items-center">
+                <div>
+                    <label class="question-label block text-gray-700 font-semibold mb-1">Câu hỏi ${id}</label>
+                    <span class="text-sm text-indigo-600 font-medium">${typeLabel}</span>
+                </div>
+                <button type="button" onclick="removeThisQuestion(this)" class="text-red-500 hover:text-red-700 text-sm">Xóa</button>
+            </div>
+            <label class="block text-gray-700 text-sm">Dải câu hỏi (Question Range):</label>
+            <input type="text" name="questions[${id}][question_range]" class="w-full border rounded px-3 py-2 text-sm" placeholder="Ví dụ: 1-5 (cho nhóm) hoặc 6 (cho câu đơn)" required>
+        `;
+    }
+
+    function createSimpleQuestionHTML(id, type) {
+        let label = "Điền vào chỗ trống";
+        if (type === 'true_false_not_given') label = "True/False/Not Given";
+        if (type === 'yes_no_not_given') label = "Yes/No/Not Given";
+        return `
+            ${createQuestionShell(id, type, label)}
+            <label class="block text-gray-700 text-sm">Nội dung câu hỏi/Hướng dẫn (Instruction):</label>
+            <textarea name="questions[${id}][query]" rows="2" class="w-full border rounded px-3 py-2 text-sm" required></textarea>
+            <label class="block text-gray-700 text-sm">Đáp án đúng (Answer):</label>
+            <input type="text" name="questions[${id}][answer]" class="w-full border rounded px-3 py-2 text-sm" placeholder="Ví dụ: water (hoặc True, False, Not Given...)" required>
+        `;
+    }
+
+    function createMultipleChoiceHTML(id) {
+        return `
+            ${createQuestionShell(id, 'multiple_choice', 'Trắc nghiệm (Động)')}
+            <label class="block text-gray-700 text-sm">Nội dung câu hỏi/Hướng dẫn (Instruction):</label>
+            <textarea name="questions[${id}][query]" rows="2" class="w-full border rounded px-3 py-2 text-sm" required></textarea>
+            <label class="block text-gray-700 text-sm">Đáp án đúng (Answer):</label>
+            <input type="text" name="questions[${id}][answer]" class="w-full border rounded px-3 py-2 text-sm" placeholder="Ví dụ: A (hoặc A,C nếu nhiều đáp án)" required>
+            <div class="dynamic-options-container space-y-2 pl-4 border-l-2 border-indigo-200">
+                <label class="block text-gray-600 text-sm font-medium">Các lựa chọn (Options):</label>
+            </div>
+            <button type="button" onclick="addMcOption(this, ${id})" class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">+ Thêm lựa chọn</button>
+        `;
+    }
+
+    function createMatchingHTML(id) {
+        return `
+            ${createQuestionShell(id, 'matching', 'Matching (Nối)')}
+            <label class="block text-gray-700 text-sm">Câu hỏi chính/Hướng dẫn (Instruction):</label>
+            <textarea name="questions[${id}][query]" rows="3" class="w-full border rounded px-3 py-2 text-sm"
+                placeholder="Ví dụ: Nối các tiêu đề (i-v) với các đoạn văn (A-D)..." required></textarea>
+            <label class="block text-gray-600 text-sm font-medium">Danh sách các Items:</label>
+            <textarea name="questions[${id}][matching_items]" rows="4" class="w-full border rounded px-3 py-2 text-sm"
+                placeholder="Dán danh sách các items vào đây (mỗi item 1 dòng)..."></textarea>
+            <div class="sub-questions-container space-y-3 pt-3 border-t">
+                <label class="block text-gray-600 text-sm font-medium">Các câu hỏi con (Sub-questions):</label>
+            </div>
+            <button type="button" onclick="addMatchingSubQuestion(this, ${id})" class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">+ Thêm câu hỏi con</button>
+        `;
+    }
+
+    // -------------------------------------------------------------------
+    // HÀM CHÍNH (Main execution) - ĐÃ SỬA LẠI CẤU TRÚC
+    // -------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', function () {
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const questionsContainer = document.getElementById('questions-container');
+        const questionTypeSelect = document.getElementById('question-type-select');
+        // (SỬA) Lấy các element mới ở đây
+        const categorySelect = document.getElementById('category-select');
+        const audioUploadField = document.getElementById('audio-upload-field');
+        const passageField = document.getElementById('passage-field');
+
+        let questionIdCounter = 0; // ID nội bộ duy nhất
+
+        // --- Logic thêm câu hỏi ---
+        addQuestionBtn.addEventListener('click', function () {
+            if (questionsContainer.querySelectorAll('.question-block').length >= 40) return;
+            questionIdCounter += 1;
+            const selectedType = questionTypeSelect.value;
+            const questionBlock = document.createElement('div');
+            questionBlock.className = 'question-block border rounded p-4 bg-gray-50 space-y-3';
+            let questionHTML = '';
+            switch (selectedType) {
+                case 'fill_in_blank':
+                case 'true_false_not_given':
+                case 'yes_no_not_given':
+                    questionHTML = createSimpleQuestionHTML(questionIdCounter, selectedType);
+                    break;
+                case 'multiple_choice':
+                    questionHTML = createMultipleChoiceHTML(questionIdCounter);
+                    break;
+                case 'matching':
+                    questionHTML = createMatchingHTML(questionIdCounter);
+                    break;
+            }
+            questionBlock.innerHTML = questionHTML;
+            questionsContainer.appendChild(questionBlock);
+            updateQuestionNumbers();
+            updateAddButtonState();
+        });
+
+        // --- (SỬA) Logic ẩn/hiện trường Upload ---
+        function toggleFields() {
+            // Thêm kiểm tra null phòng trường hợp element không tồn tại
+            if (!categorySelect || !audioUploadField || !passageField) {
+                console.error("Missing required elements for toggleFields");
+                return;
+            }
+
+            if (categorySelect.value === 'Listening') {
+                audioUploadField.classList.remove('hidden');
+                passageField.classList.add('hidden');
+            } else {
+                audioUploadField.classList.add('hidden');
+                passageField.classList.remove('hidden');
+            }
+        }
+
+        // Gọi khi tải trang
+        toggleFields();
+        // Gọi khi select thay đổi (kiểm tra null trước khi add listener)
+        if (categorySelect) {
+            categorySelect.addEventListener('change', toggleFields);
+        }
+
+        // Gọi hàm kiểm tra nút 40 câu khi tải trang
+        updateAddButtonState();
+
+    }); // <-- DẤU ĐÓNG CỦA DOMContentLoaded
+</script>
+{% endblock %}

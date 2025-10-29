@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Chọn bài {{ current_category }} - Luyện Thi IELTS
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-8">
+
+    <!-- ===== CỘT BÊN TRÁI (SIDEBAR) ===== -->
+    <aside class="w-full md:w-1/4 lg:w-1/5 bg-white p-6 rounded-lg shadow-md flex-shrink-0">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Danh mục</h2>
+
+        <!-- Mục Reading -->
+        <div class="mb-5">
+            <!-- (SỬA) Sửa url_for thành 'choose_test' -->
+            <a href="{{ url_for('test.choose_test', category='Reading') }}"
+                class="text-lg font-medium {% if current_category == 'Reading' %} text-blue-600 {% else %} text-gray-700 hover:text-blue-600 {% endif %}">
+                📚 Reading Tests
+            </a>
+            {% if latest_reading %}
+            <ul class="mt-2 ml-4 space-y-1 text-sm list-disc list-inside">
+                {% for test in latest_reading %}
+                <li>
+                    <!-- (THÊM) Thêm link tới trang làm bài Reading -->
+                    <a href="{{ url_for('test.reading_test_page', test_id=test.id) }}"
+                        class="text-gray-600 hover:text-blue-500 hover:underline">
+                        {{ test.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <!-- Mục Listening -->
+        <div>
+            <!-- (SỬA) Sửa url_for thành 'choose_test' -->
+            <a href="{{ url_for('test.choose_test', category='Listening') }}"
+                class="text-lg font-medium {% if current_category == 'Listening' %} text-green-600 {% else %} text-gray-700 hover:text-green-600 {% endif %}">
+                🎧 Listening Tests
+            </a>
+            {% if latest_listening %}
+            <ul class="mt-2 ml-4 space-y-1 text-sm list-disc list-inside">
+                {% for test in latest_listening %}
+                <li>
+                    <!-- (THÊM) Thêm link tới trang làm bài Listening -->
+                    <a href="{{ url_for('test.listening_test_page', test_id=test.id) }}"
+                        class="text-gray-600 hover:text-green-500 hover:underline">
+                        {{ test.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+    </aside>
+
+    <!-- ===== CỘT BÊN PHẢI (MAIN CONTENT) ===== -->
+    <main class="flex-1">
+        <div class="flex justify-between items-center mb-6">
+            <h1 id="selection-title" class="text-3xl font-bold text-gray-900">
+                Chọn bài {{ current_category }} Test
+            </h1>
+            <a href="{{ url_for('index') }}" class="text-blue-600 hover:text-blue-800 font-medium hidden md:block">
+                &larr; Quay lại Trang chủ
+            </a>
+        </div>
+
+        {% if tests %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Lặp qua danh sách các test của category hiện tại -->
+            {% for test in tests %}
+            <div
+                class="test-card bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ test.title }}</h3>
+                    <!-- Bạn có thể thêm cột 'topic' hoặc 'description' vào model Test nếu muốn -->
+                    <!-- <p class="text-gray-600 mb-4">{{ test.topic if test.topic else 'Chưa có mô tả' }}</p> -->
+                </div>
+                <!-- (THÊM) Link tới trang thi, dùng endpoint động -->
+                
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Hiển thị nếu không có test nào trong category này -->
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+            <p class="text-gray-600 italic">Chưa có bài test nào được thêm cho mục {{ current_category }}.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
