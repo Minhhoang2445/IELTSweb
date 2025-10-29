@@ -16,7 +16,11 @@ app.register_blueprint(test_bp, url_prefix="/tests")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
     os.path.join(basedir, 'list_tests.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+upload_path = os.path.join(basedir, 'static', 'audio')
 
+os.makedirs(upload_path, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = upload_path
 db.init_app(app)
 
 

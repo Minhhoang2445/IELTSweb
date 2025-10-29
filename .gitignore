@@ -1,0 +1,9 @@
+# Bỏ qua file database
+*.db
+list_tests.db
+
+# Bỏ qua thư mục cache của Python
+__pycache__/
+*.pyc
+
+# Bỏ qua thư mục virtual environment (nếu bạn có)

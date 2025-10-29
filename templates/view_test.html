@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Xem Đề: {{ test.title }}
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen bg-gray-100 font-sans">
+
+    <aside class="w-64 bg-indigo-700 text-white p-6 space-y-6 flex-shrink-0">
+        <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+        <nav class="space-y-3">
+            <a href="{{ url_for('admin.admin_panel', section='users') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition">👥 Quản lý người dùng</a>
+            <a href="{{ url_for('admin.admin_panel', section='add_test') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition">📝 Thêm đề mới</a>
+            <a href="{{ url_for('admin.admin_panel', section='view_tests') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition bg-indigo-800">📚 Xem các đề đã thêm</a>
+            <a href="{{ url_for('index') }}" class="block py-2 px-3 rounded hover:bg-indigo-600 transition">🏠 Về
+                trang chủ</a>
+            <a href="{{ url_for('auth.logout') }}"
+                class="block py-2 px-3 rounded hover:bg-indigo-600 transition text-red-300">🚪 Đăng xuất</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <section class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-lg">
+
+            <h1 class="text-3xl font-bold text-indigo-700 mb-2">{{ test.title }}</h1>
+            <p class="text-lg text-gray-600 mb-4">Loại đề: <span class="font-semibold">{{ test.category }}</span></p>
+
+            {% if test.category == 'Listening' and test.audio_url %}
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">Audio</h2>
+                <audio controls class="w-full">
+                    <source src="{{ test.audio_url }}" type="audio/mpeg">
+                    Trình duyệt của bạn không hỗ trợ file audio.
+                </audio>
+            </div>
+            {% endif %}
+
+            <hr class="my-6">
+
+            <div class="space-y-8">
+                {% for passage in sorted_passages %}
+                <article class="passage-block border rounded-lg p-4 sm:p-6 bg-gray-50/70">
+                    <h2 class="text-2xl font-semibold text-purple-700 mb-4">
+                        {% if test.category == 'Listening' %}
+                        Section {{ loop.index }}
+                        {% else %}
+                        Đoạn văn (Passage) {{ loop.index }}
+                        {% endif %}
+                    </h2>
+
+                    {% if test.category == 'Reading' %}
+                    <div class="prose prose-indigo max-w-none text-gray-800 mb-6 whitespace-pre-wrap">
+                        {{ passage.passage_text }}
+                    </div>
+                    {% endif %}
+
+                    <div class="questions-area space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-300 pb-2">Các câu hỏi</h3>
+
+                        {% for q in passage.sorted_questions %}
+                        {% set extra = json.loads(q.extra_data) if q.extra_data else {} %}
+
+                        <div class="question-block border rounded p-4 bg-white shadow-sm">
+
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-lg font-bold text-indigo-800">Câu hỏi: {{ q.question_range }}</h4>
+                                <span class="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{{
+                                    q.question_type }}</span>
+                            </div>
+
+                            <p class="font-medium text-gray-700 mb-3 whitespace-pre-wrap">{{ q.instruction_text }}</p>
+
+                            {% if q.question_type in ['fill_in_blank', 'true_false_not_given', 'yes_no_not_given'] %}
+                            <div class="bg-green-50 border border-green-200 p-3 rounded">
+                                <strong class="text-green-800">Đáp án:</strong>
+                                <code class="ml-2 text-green-700 font-semibold">{{ q.simple_answer }}</code>
+                            </div>
+                            {% endif %}
+
+                            {% if q.question_type == 'multiple_choice' %}
+                            <div class="space-y-2 mb-3">
+                                <h5 class="text-sm font-semibold text-gray-600">Các lựa chọn:</h5>
+                                <ul class="list-disc list-inside pl-4 text-gray-700">
+                                    {% for option in extra.get('options', []) %}
+                                    <li>{{ option }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 p-3 rounded">
+                                <strong class="text-green-800">Đáp án đúng:</strong>
+                                <code class="ml-2 text-green-700 font-semibold">{{ q.simple_answer }}</code>
+                            </div>
+                            {% endif %}
+
+                            {% if q.question_type == 'matching' %}
+                            {% if extra.get('matching_items') %}
+                            <div class="mb-3">
+                                <h5 class="text-sm font-semibold text-gray-600">Danh sách Items (để nối):</h5>
+                                <div class="p-3 bg-gray-100 rounded border text-sm">
+                                    <ul class="list-decimal list-inside">
+                                        {% for item in extra.get('matching_items', []) %}
+                                        <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="space-y-2">
+                                <h5 class="text-sm font-semibold text-gray-600">Các câu hỏi con và đáp án:</h5>
+                                <table class="min-w-full border text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-3 py-2 border text-left">Câu hỏi (List A)</th>
+                                            <th class="px-3 py-2 border text-left text-green-800">Đáp án (List B)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sub_q in extra.get('sub_questions', []) %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-3 py-2 border">{{ sub_q.query }}</td>
+                                            <td class="px-3 py-2 border font-semibold text-green-700">{{ sub_q.answer }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+
+                        </div>
+                        {% else %}
+                        <p class="italic text-gray-500">Không có câu hỏi nào cho passage này.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+                {% else %}
+                <p class="text-center text-gray-600 italic">Đề thi này không có passage/section nào.</p>
+                {% endfor %}
+            </div>
+
+        </section>
+    </main>
+</div>
+{% endblock %}

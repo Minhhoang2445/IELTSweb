@@ -80,6 +80,10 @@ Chọn bài {{ current_category }} - Luyện Thi IELTS
                     <!-- <p class="text-gray-600 mb-4">{{ test.topic if test.topic else 'Chưa có mô tả' }}</p> -->
                 </div>
                 <!-- (THÊM) Link tới trang thi, dùng endpoint động -->
+                <a href="{{ url_for('test.listening_test_page', test_id=test.id) }}"
+                    class="mt-4 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                    Làm bài
+                </a>
                 
             </div>
             {% endfor %}

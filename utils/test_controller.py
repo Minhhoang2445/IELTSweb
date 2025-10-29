@@ -1,7 +1,7 @@
 from flask import Blueprint, Flask, abort, json, render_template, session
 from utils.data_manage import *
 from utils.extensions import db
-
+import json
 test_bp = Blueprint(
     'test', __name__, template_folder='templates', static_folder='static')
 
@@ -80,7 +80,7 @@ def listening_test_page(test_id):
 
     # Giả sử bạn sẽ thêm trường 'audio_url' vào model Test
     # audio_url = test.audio_url if hasattr(test, 'audio_url') and test.audio_url else "https://placehold.co/audio/mp3"
-    audio_url = "https://placehold.co/audio/mp3"  # Placeholder
+    audio_url = test.audio_url if hasattr(test, 'audio_url') and test.audio_url else ""
 
     return render_template('listening_test.html',
                            test=test,

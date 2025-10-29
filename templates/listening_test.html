@@ -16,7 +16,7 @@
             <div class="text-base sm:text-lg font-medium text-red-600">Timer: <span id="listening-timer">40:00</span>
             </div>
             <!-- Link back to the category selection page -->
-            <a href="{{ url_for('choose_test', category='Listening') }}"
+            <a href="{{ url_for('test.choose_test', category='Listening') }}"
                 class="bg-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-gray-300">Quay
                 lại</a>
             <!-- Submit button (needs form wrapping and POST logic) -->
@@ -39,8 +39,7 @@
 
     <!-- Question Area (Single Column, Centered) -->
     <!-- Wrap questions in a form for submission -->
-    <form method="POST" action="{{ url_for('submit_listening_answers', test_id=test.id) }}"> {# Define this route later
-        #}
+    
         <div class="bg-white max-w-4xl mx-auto p-6 sm:p-10 rounded-lg shadow-lg space-y-10">
 
             {# --- Loop through Sections (1-4) --- #}
@@ -143,10 +142,7 @@
             {% endfor %} {# End loop blocks #}
 
             {# Display message if no blocks found for this section (unlikely if data is correct) #}
-            {% if not passage.question_blocks|selectattr('question_range', 'match', '^({}|{})'.format(start_q, '' if
-            start_q == end_q else '-{}'.format(end_q)))|list %}
-            <p class="text-gray-500 italic text-center">No questions loaded for this section.</p>
-            {% endif %}
+            
 
         </div> {# End listening-section #}
         {% endfor %} {# End loop sections 1-4 #}

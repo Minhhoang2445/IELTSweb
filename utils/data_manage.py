@@ -17,16 +17,15 @@ class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(50), nullable=False)
-    passages = db.relationship('Passage', backref='test', lazy=True)
-    audio = db.Column(db.String(200), nullable=True)  
-
+    audio_url = db.Column(db.String(200), nullable=True)
+    passages = db.relationship('Passage', backref='test',
+                           cascade="all, delete-orphan")
 
 class Passage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     passage_text = db.Column(db.Text, nullable=False)
     test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
-    question_blocks = db.relationship('QuestionBlock', backref='passage', lazy=True)
-
+    question_blocks = db.relationship('QuestionBlock', backref='passage', cascade="all, delete-orphan")
 
 class QuestionBlock(db.Model):
     id = db.Column(db.Integer, primary_key=True)
