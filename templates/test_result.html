@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Kết quả: {{ result.test.title }}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl py-8"> <!-- (MỞ RỘNG) max-w-4xl -> max-w-5xl -->
+
+    <!-- Header: Tiêu đề và Điểm số (Không đổi) -->
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ result.test.title }}</h1>
+        <p class="text-lg text-gray-600 mb-4">Hoàn thành lúc: {{ result.taken_at.strftime('%H:%M ngày %d-%m-%Y') }}</p>
+
+        <div class="flex justify-center space-x-8">
+            <div class="text-center">
+                <p class="text-sm font-medium text-gray-500 uppercase">ĐIỂM SỐ</p>
+                <p class="text-5xl font-bold text-blue-600">{{ result.score|int }} / {{ total_questions }}</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm font-medium text-gray-500 uppercase">BAND (Ước tính)</p>
+                <p class="text-5xl font-bold text-green-600">{{ band_score }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng chi tiết kết quả (ĐÃ SỬA LẠI CỘT) -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-800">Chi tiết câu trả lời</h2>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full border">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <!-- (MỚI) Cột 1: STT -->
+                        <th class="px-3 py-2 border text-center text-sm font-medium text-gray-600 uppercase w-12">STT
+                        </th>
+                        <!-- (SỬA) Cột 2: Câu hỏi (rộng hơn) -->
+                        <th class="px-4 py-2 border text-left text-sm font-medium text-gray-600 uppercase w-2/5">Câu hỏi
+                        </th>
+                        <!-- Cột 3: Trả lời -->
+                        <th class="px-4 py-2 border text-left text-sm font-medium text-gray-600 uppercase">Câu trả lời
+                            của bạn</th>
+                        <!-- Cột 4: Đáp án -->
+                        <th class="px-4 py-2 border text-left text-sm font-medium text-gray-600 uppercase">Đáp án đúng
+                        </th>
+                        <!-- Cột 5: Kết quả -->
+                        <th class="px-4 py-2 border text-center text-sm font-medium text-gray-600 uppercase">Kết quả
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for answer in answers %}
+                    <tr class="{% if answer.is_correct %} bg-green-50 {% else %} bg-red-50 {% endif %}">
+
+                        <!-- (MỚI) Cột 1: STT (dùng loop.index) -->
+                        <td class="px-3 py-2 border text-center font-medium text-gray-800">{{ loop.index }}</td>
+
+                        <!-- (SỬA) Cột 2: Hiển thị chi tiết câu hỏi -->
+                        <td class="px-4 py-2 border text-sm text-gray-800">
+                            {% if answer.question_type == 'matching' %}
+                            <!-- Dạng Matching: Hiển thị sub-query (ví dụ: "14. reference...") -->
+                            <p class="font-medium">{{ answer.query_label | safe }}</p>
+                            <!-- Hiển thị hướng dẫn chung của khối (thu nhỏ) -->
+
+                            {% elif answer.question_type == 'multiple_choice' %}
+                            <!-- Dạng MC: Hiển thị instruction làm câu hỏi chính -->
+                            <p class="font-medium">{{ answer.instruction | safe }}</p>
+                            <!-- Hiển thị các lựa chọn (A, B, C, D) -->
+                            {% if answer.options %}
+                            <ul class="list-disc list-inside ml-4 mt-2 text-xs text-gray-600">
+                                {% for option in answer.options %}
+                                <li>{{ option }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+
+                            {% else %}
+                            <!-- Dạng Fill, T/F: Hiển thị instruction -->
+                            <p>{{ answer.instruction | safe }}</p>
+                            <!-- Hiển thị nhãn câu (ví dụ: (Câu 1)) -->
+                            {% endif %}
+                        </td>
+
+                        <!-- Cột 3: Câu trả lời của bạn (Không đổi) -->
+                        <td class="px-4 py-2 border text-gray-700">{{ answer.user_answer if answer.user_answer else '(Bỏ
+                            trống)' }}</td>
+
+                        <!-- Cột 4: Đáp án đúng (Không đổi) -->
+                        <td class="px-4 py-2 border text-green-700 font-medium">{{ answer.correct_answer if
+                            answer.correct_answer is not none else 'N/A' }}</td>
+
+                        <!-- Cột 5: Kết quả (Không đổi) -->
+                        <td class="px-4 py-2 border text-center">
+                            {% if answer.is_correct %}
+                            <span class="text-green-600 font-bold text-lg">✓</span>
+                            {% else %}
+                            <span class="text-red-600 font-bold text-lg">✗</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="{{ url_for('test.choose_test', category=result.test.category) }}"
+                class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition duration-200">
+                Làm bài test khác
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

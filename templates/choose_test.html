@@ -79,12 +79,19 @@ Chọn bài {{ current_category }} - Luyện Thi IELTS
                     <!-- Bạn có thể thêm cột 'topic' hoặc 'description' vào model Test nếu muốn -->
                     <!-- <p class="text-gray-600 mb-4">{{ test.topic if test.topic else 'Chưa có mô tả' }}</p> -->
                 </div>
+                {% if current_category == 'Reading' %}
                 <!-- (THÊM) Link tới trang thi, dùng endpoint động -->
-                <a href="{{ url_for('test.listening_test_page', test_id=test.id) }}"
+                <a href="{{ url_for('test.reading_test_page', test_id=test.id) }}"
                     class="mt-4 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
                     Làm bài
                 </a>
-                
+                {% elif current_category == 'Listening' %}
+                <!-- (THÊM) Link tới trang thi, dùng endpoint động -->  
+                <a href="{{ url_for('test.listening_test_page', test_id=test.id) }}"
+                    class="mt-4 inline-block bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                    Làm bài
+                </a>
+                {% endif %}
             </div>
             {% endfor %}
         </div>

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from utils.users_manage import get_user_by_email, add_user, load_data
-from utils.data_manage import Test, Passage
+from utils.users_manage import get_user_by_email, check_user_password, add_user
+from utils.data_manage import Test, Passage, User 
 auth = Blueprint('auth', __name__, template_folder='templates',
                  static_folder='static')
 
@@ -13,19 +13,26 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm = request.form['confirm_password']
+        if get_user_by_email(email):
+            flash("Email đã được đăng ký.", 'error')
+            return redirect(url_for('auth.register'))
         if password != confirm:
-            flash("Mật khẩu không khớp!")
+            flash("Mật khẩu không khớp!", 'error')
             return redirect(url_for('auth.register'))
 
         if not name or not email or not password:
-            flash("Vui lòng điền đầy đủ thông tin.")
+            flash("Vui lòng điền đầy đủ thông tin.", 'error')
             return redirect(url_for('auth.register'))
         if len(password) < 8 or not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
-            flash("Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa và 1 số.")
+            flash("Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa và 1 số.", 'error')
             return redirect(url_for('auth.register'))
-        add_user(name, email, password)
-        flash("Đăng ký thành công! Hãy đăng nhập.")
-        return redirect(url_for('auth.login'))
+        try:
+            add_user(name, email, password)
+            flash("Đăng ký thành công! Hãy đăng nhập.", 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            flash(f"Lỗi khi đăng ký: {e}", 'error')
+            return redirect(url_for('auth.register'))
     
     return render_template('register.html')
 
@@ -35,13 +42,14 @@ def login():
         email = request.form['email']
         password = request.form['password']
         user = get_user_by_email(email)
-        if user and user['password'] == password:
-            session['user_name'] = user['name']
-            session['email'] = user['email']
-            session['role'] = user.get('role', 'user')
+        if user and check_user_password(email, password):
+            session['user_id'] = user.id
+            session['user_name'] = user.name
+            session['email'] = user.email
+            session['role'] = user.role
             return redirect(url_for('index'))
         else:
-            flash("Sai email hoặc mật khẩu.")
+            flash("Sai email hoặc mật khẩu.", 'error')
             return redirect(url_for('auth.login'))
         
     return render_template('login.html')

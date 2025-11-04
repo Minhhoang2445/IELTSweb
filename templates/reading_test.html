@@ -5,275 +5,279 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-col h-[calc(100vh-8rem)]"> <!-- Adjust height based on your nav height -->
+<!-- (SỬA) Thẻ <form> phải bọc TẤT CẢ nội dung (bao gồm cả header) -->
+<form method="POST" action="{{ url_for('test.submit_reading_answers', test_id=test.id) }}">
+    <div class="flex flex-col h-[calc(100vh-8rem)]">
 
-    <!-- Header: Title and Passage Buttons -->
-    <div class="mb-4 flex-shrink-0">
-        <div class="flex justify-between items-center mb-2">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">{{ test.title }}</h1>
-            <!-- Nút Nộp bài (chưa có logic) -->
-            <button
-                class="bg-green-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-green-700 transition duration-200">
-                Nộp bài
-            </button>
-        </div>
-        <!-- Passage Selection Buttons -->
-        <div class="flex space-x-2 border-b pb-2">
-            {% for passage in test.passages %}
-            <button data-passage="{{ loop.index }}"
-                class="reading-page-btn px-4 py-2 rounded-md text-sm font-medium transition
-                       {% if loop.first %} bg-blue-600 text-white {% else %} bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 {% endif %}">
-                Passage {{ loop.index }}
-            </button>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Main Content: Two Panels with Splitter -->
-    <div id="reading-container" class="flex flex-1 overflow-hidden border rounded-lg shadow-inner bg-gray-50">
-
-        <!-- Left Panel: Passage -->
-        <div id="reading-passage-panel" class="w-1/2 p-4 overflow-y-auto bg-white border-r border-gray-300">
-            {% for passage in test.passages %}
-            <div data-passage="{{ loop.index }}"
-                class="reading-passage {% if not loop.first %}hidden{% endif %} prose max-w-none">
-                <!-- Hiển thị nội dung passage -->
-                <!-- Sử dụng safe filter nếu passage_text chứa HTML, hoặc xử lý xuống dòng -->
-                {% for paragraph in passage.passage_text.splitlines() %}
-                {% if paragraph.strip() %}
-                <p>{{ paragraph }}</p>
-                {% endif %}
+        <!-- Header: Title and Passage Buttons -->
+        <div class="mb-4 flex-shrink-0">
+            <div class="flex justify-between items-center mb-2">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">{{ test.title }}</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="text-base sm:text-lg font-medium text-red-600">Timer: <span
+                            id="reading-timer">60:00</span></div>
+                    <button type="submit"
+                        class="bg-green-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-green-700 transition duration-200">
+                        Nộp bài
+                    </button>
+                </div>
+            </div>
+            <!-- Passage Selection Buttons -->
+            <div class="flex space-x-2 border-b pb-2">
+                {% for passage in test.passages %}
+                <button type="button" data-passage="{{ loop.index }}"
+                    class="reading-page-btn px-4 py-2 rounded-md text-sm font-medium transition
+                           {% if loop.first %} bg-blue-600 text-white {% else %} bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 {% endif %}">
+                    Passage {{ loop.index }}
+                </button>
                 {% endfor %}
             </div>
-            {% endfor %}
         </div>
 
-        <!-- Splitter -->
-        <div id="reading-splitter" class="w-2 bg-gray-300 hover:bg-blue-500 cursor-col-resize flex-shrink-0"></div>
+        <!-- Main Content: Two Panels with Splitter -->
+        <div id="reading-container" class="flex flex-1 overflow-hidden border rounded-lg shadow-inner bg-gray-50">
 
-        <!-- Right Panel: Questions -->
-        <div id="reading-question-panel" class="flex-1 p-4 overflow-y-auto bg-white">
-            {% for passage in test.passages %}
-            <div data-passage="{{ loop.index }}"
-                class="reading-questions space-y-6 {% if not loop.first %}hidden{% endif %}">
-                {% if passage.question_blocks %}
-                {% for block in passage.question_blocks %}
-                <div class="question-block border rounded p-4 bg-gray-50 shadow-sm">
-                    <p class="font-semibold text-gray-700 mb-2">Questions {{ block.question_range }}</p>
-                    <div class="prose prose-sm max-w-none mb-4 instruction-text">
-                        {# Hiển thị hướng dẫn, dùng safe nếu có HTML #}
-                        {% for line in block.instruction_text.splitlines() %}
-                        {% if line.strip() %} <p>{{ line | safe }}</p> {% endif %}
-                        {% endfor %}
-                    </div>
-
-                    {# --- Render Input Fields Based on Type --- #}
-
-                    {# 1. Simple Types (Fill, T/F, Y/N) #}
-                    {% if block.question_type in ['fill_in_blank', 'true_false_not_given', 'yes_no_not_given'] %}
-                    <div class="space-y-2">
-                        {# Giả định mỗi range chỉ có 1 câu trả lời đơn giản (cần xem lại logic nếu range > 1 câu) #}
-                        <label class="block text-sm font-medium text-gray-700">Your Answer ({{ block.question_range
-                            }}):</label>
-                        <input type="text" name="answer_{{ block.id }}_0" {# ID block + sub_index 0 #}
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    </div>
-
-                    {# 2. Multiple Choice #}
-                    {% elif block.question_type == 'multiple_choice' %}
-                    <div class="space-y-2">
-                        {# Giả định chỉ có 1 câu trả lời #}
-                        <label class="block text-sm font-medium text-gray-700">Your Answer ({{ block.question_range
-                            }}):</label>
-                        {% if block.extra_data_dict.options %}
-                        <select name="answer_{{ block.id }}_0"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                            <option value="">-- Select --</option>
-                            {% for option in block.extra_data_dict.options %}
-                            <option value="{{ option.split('.')[0] | trim }}">{{ option }}</option> {# Lấy ký tự đầu (A,
-                            B) làm value #}
-                            {% endfor %}
-                        </select>
-                        {% else %}
-                        <input type="text" name="answer_{{ block.id }}_0" placeholder="Enter answer choice(s)"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                        {% endif %}
-                    </div>
-
-                    {# 3. Matching #}
-                    {% elif block.question_type == 'matching' %}
-                    {# Hiển thị danh sách items nếu có #}
-                    {% if block.extra_data_dict.matching_items %}
-                    <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded text-sm">
-                        <p class="font-medium mb-1">Options:</p>
-                        <ul class="list-disc list-inside">
-                            {% for item in block.extra_data_dict.matching_items %}
-                            <li>{{ item }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+            <!-- Left Panel: Passage -->
+            <div id="reading-passage-panel" class="w-1/2 p-4 overflow-y-auto bg-white border-r border-gray-300">
+                {% for passage in test.passages %}
+                <div data-passage="{{ loop.index }}"
+                    class="reading-passage {% if not loop.first %}hidden{% endif %} prose max-w-none">
+                    {% for paragraph in passage.passage_text.splitlines() %}
+                    {% if paragraph.strip() %}
+                    <p>{{ paragraph }}</p>
                     {% endif %}
-                    {# Lặp qua các câu hỏi con #}
-                    {% if block.extra_data_dict.sub_questions %}
-                    <div class="space-y-3">
-                        {% for sub_q in block.extra_data_dict.sub_questions %}
-                        <div class="flex items-center space-x-2">
-                            <label class="w-2/5 text-sm font-medium text-gray-700">{{ sub_q.query }}:</label>
-                            <input type="text" name="answer_{{ block.id }}_{{ loop.index0 }}" {# ID block + sub_index #}
-                                class="flex-1 border border-gray-300 rounded-md px-3 py-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                placeholder="Enter match (e.g., A, iii)">
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Splitter -->
+            <div id="reading-splitter" class="w-2 bg-gray-300 hover:bg-blue-500 cursor-col-resize flex-shrink-0"></div>
+
+            <!-- Right Panel: Questions (ĐÃ SỬA LẠI LOGIC RENDER) -->
+            <div id="reading-question-panel" class="flex-1 p-4 overflow-y-auto bg-white">
+                {% for passage in test.passages %}
+                <div data-passage="{{ loop.index }}"
+                    class="reading-questions space-y-6 {% if not loop.first %}hidden{% endif %}">
+                    {% if passage.question_blocks %}
+                    {% for block in passage.question_blocks %}
+                    <div class="question-block border rounded p-4 bg-gray-50 shadow-sm">
+                        <p class="font-semibold text-gray-700 mb-2">Question </p>
+                        <div class="prose prose-sm max-w-none mb-4 instruction-text">
+                            {% for line in block.instruction_text.splitlines() %}
+                            {% if line.strip() %} <p>{{ line | safe }}</p> {% endif %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+
+                        {# --- (LOGIC ĐÃ ĐƠN GIẢN HÓA) --- #}
+
+                        {# 1. Dạng CÂU HỎI NHÓM (Matching) #}
+                        {% if block.extra_data_dict.sub_questions %}
+
+                        {% if block.extra_data_dict.matching_items %}
+                        <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded text-sm">
+                            <p class="font-medium mb-1">Options:</p>
+                            <ul class="list-disc list-inside">
+                                {% for item in block.extra_data_dict.matching_items %}
+                                <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {# Lặp qua các CÂU HỎI CON #}
+                        <div class="space-y-3">
+                            {% for sub_q in block.extra_data_dict.sub_questions %}
+                            <div class="flex items-center space-x-2">
+                                <label class="w-2/5 text-sm font-medium text-gray-700">{{ sub_q.query }}:</label>
+                                <input type="text" name="answer_{{ block.id }}_{{ loop.index0 }}" {# ID block +
+                                    sub_index #}
+                                    class="flex-1 border border-gray-300 rounded-md px-3 py-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    placeholder="Nhập đáp án...">
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {# 2. (SỬA LẠI) Dạng CÂU HỎI ĐƠN (Fill, T/F, MC) #}
+                        {% else %}
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Your Answer ({{ block.question_range }}):</label>
+                        
+                            {# (MỚI) CASE 1: True/False/Not Given #}
+                            {% if block.question_type == 'true_false_not_given' %}
+                            <div class="flex space-x-4 pt-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="True"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">True</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="False"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">False</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="Not Given"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">Not Given</span>
+                                </label>
+                            </div>
+                        
+                            {# (MỚI) CASE 2: Yes/No/Not Given #}
+                            {% elif block.question_type == 'yes_no_not_given' %}
+                            <div class="flex space-x-4 pt-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="Yes"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">Yes</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="No"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">No</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="answer_{{ block.id }}_0" value="Not Given"
+                                        class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">Not Given</span>
+                                </label>
+                            </div>
+                        
+                            {# CASE 3: Multiple Choice #}
+                            {% elif block.question_type == 'multiple_choice' and block.extra_data_dict.options %}
+                            <select name="answer_{{ block.id }}_0"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                <option value="">-- Select --</option>
+                                {% for option in block.extra_data_dict.options %}
+                                <option value="{{ option.split('.')[0] | trim }}">{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                        
+                            {# CASE 4: Fallback (Fill in blank) #}
+                            {% else %}
+                            <input type="text" name="answer_{{ block.id }}_0" {# Luôn là sub_index 0 #}
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                placeholder="Nhập đáp án (ví dụ: ans1, ans2, ...)">
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
                     </div>
-                    {% endif %}
-
-                    {# Fallback for unknown types #}
+                    {% endfor %}
                     {% else %}
-                    <p class="text-red-500">Unsupported question type: {{ block.question_type }}</p>
+                    <p class="text-gray-500 italic">No questions available for this passage.</p>
                     {% endif %}
+                </div>
+                {% endfor %}
+            </div>
 
-                </div> {# End question-block #}
-                {% endfor %} {# End loop blocks #}
-                {% else %}
-                <p class="text-gray-500 italic">No questions available for this passage.</p>
-                {% endif %}
-            </div> {# End reading-questions #}
-            {% endfor %} {# End loop passages for questions #}
-        </div>
+        </div> <!-- End reading-container -->
+    </div> <!-- End main flex container -->
+</form> <!-- Đóng form -->
 
-    </div> <!-- End reading-container -->
-
-</div> <!-- End main flex container -->
-
-
-<!-- ===== JAVASCRIPT LOGIC (Inline) ===== -->
+<!-- ===== JAVASCRIPT LOGIC (Không đổi) ===== -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // ===================================
-        // Logic cho Trang Reading (Switch Passages)
-        // ===================================
+        // ... (Toàn bộ code JavaScript cho splitter, chuyển passage và timer y hệt) ...
         const readingPageButtons = document.querySelectorAll('.reading-page-btn');
         const readingPassages = document.querySelectorAll('.reading-passage');
         const readingQuestions = document.querySelectorAll('.reading-questions');
         const passagePanel = document.getElementById('reading-passage-panel');
         const questionPanel = document.getElementById('reading-question-panel');
 
-
         readingPageButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
                 const passageNum = btn.getAttribute('data-passage');
-
-                // Cập nhật giao diện nút
                 readingPageButtons.forEach(b => {
                     b.classList.remove('bg-blue-600', 'text-white');
                     b.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-gray-100');
                 });
                 btn.classList.add('bg-blue-600', 'text-white');
                 btn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-gray-100');
-
-                // Ẩn/hiện passage
                 readingPassages.forEach(p => {
                     p.classList.toggle('hidden', p.getAttribute('data-passage') !== passageNum);
                 });
-
-                // Ẩn/hiện câu hỏi
                 readingQuestions.forEach(q => {
                     q.classList.toggle('hidden', q.getAttribute('data-passage') !== passageNum);
                 });
-
-                // Cuộn 2 panel lên đầu (chỉ nếu chúng tồn tại)
                 if (passagePanel) passagePanel.scrollTop = 0;
                 if (questionPanel) questionPanel.scrollTop = 0;
             });
         });
 
-        // ===================================
-        // Logic thanh chia (Splitter)
-        // ===================================
         const splitter = document.getElementById('reading-splitter');
-        const container = document.getElementById('reading-container'); // Container cha
+        const container = document.getElementById('reading-container');
         let isDragging = false;
-
         if (splitter && passagePanel && questionPanel && container) {
             splitter.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // Ngăn chặn text selection khi kéo
+                e.preventDefault();
                 isDragging = true;
                 document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none'; // Ngăn chọn text toàn trang
+                document.body.style.userSelect = 'none';
             });
-
             document.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
-
                 const containerRect = container.getBoundingClientRect();
-                // Tính toán vị trí X mới dựa trên vị trí chuột tương đối với container
                 let newX = e.clientX - containerRect.left;
-
-                // Giới hạn kéo (ví dụ: tối thiểu 25%, tối đa 75%)
                 const minWidth = containerRect.width * 0.25;
                 const maxWidth = containerRect.width * 0.75;
-
                 if (newX < minWidth) newX = minWidth;
                 if (newX > maxWidth) newX = maxWidth;
-
                 const splitterWidth = splitter.offsetWidth;
-
-                // Đặt chiều rộng tuyệt đối cho panel trái
                 passagePanel.style.width = `${newX}px`;
-                // Chiều rộng panel phải = Tổng - Trái - Splitter
                 questionPanel.style.width = `${containerRect.width - newX - splitterWidth}px`;
-
-                // Quan trọng: Ghi đè flex-grow/shrink để giữ kích thước cố định
                 passagePanel.style.flex = '0 0 auto';
                 questionPanel.style.flex = '0 0 auto';
             });
-
             document.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    document.body.style.cursor = 'default';
-                    document.body.style.userSelect = 'auto'; // Cho phép chọn text lại
-                }
-            });
-
-            // Xử lý touch events cho splitter trên mobile/tablet
-            splitter.addEventListener('touchstart', (e) => {
-                //e.preventDefault(); // Có thể gây lỗi cuộn trang, cân nhắc
-                isDragging = true;
-                document.body.style.cursor = 'col-resize'; // Ít tác dụng trên touch
-                document.body.style.userSelect = 'none';
-            }, { passive: true }); // passive: true để không chặn cuộn
-
-            document.addEventListener('touchmove', (e) => {
-                if (!isDragging || !e.touches[0]) return;
-
-                const containerRect = container.getBoundingClientRect();
-                let newX = e.touches[0].clientX - containerRect.left;
-
-                const minWidth = containerRect.width * 0.15; // Cho phép kéo nhỏ hơn trên mobile
-                const maxWidth = containerRect.width * 0.85;
-
-                if (newX < minWidth) newX = minWidth;
-                if (newX > maxWidth) newX = maxWidth;
-
-                const splitterWidth = splitter.offsetWidth;
-
-                passagePanel.style.width = `${newX}px`;
-                questionPanel.style.width = `${containerRect.width - newX - splitterWidth}px`;
-                passagePanel.style.flex = '0 0 auto';
-                questionPanel.style.flex = '0 0 auto';
-            }, { passive: false }); // passive: false để chặn cuộn mặc định KHI đang kéo splitter
-
-            document.addEventListener('touchend', () => {
                 if (isDragging) {
                     isDragging = false;
                     document.body.style.cursor = 'default';
                     document.body.style.userSelect = 'auto';
                 }
             });
-
+            splitter.addEventListener('touchstart', (e) => { isDragging = true; document.body.style.userSelect = 'none'; }, { passive: true });
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging || !e.touches[0]) return;
+                const containerRect = container.getBoundingClientRect();
+                let newX = e.touches[0].clientX - containerRect.left;
+                const minWidth = containerRect.width * 0.15, maxWidth = containerRect.width * 0.85;
+                if (newX < minWidth) newX = minWidth;
+                if (newX > maxWidth) newX = maxWidth;
+                const splitterWidth = splitter.offsetWidth;
+                passagePanel.style.width = `${newX}px`;
+                questionPanel.style.width = `${containerRect.width - newX - splitterWidth}px`;
+                passagePanel.style.flex = '0 0 auto';
+                questionPanel.style.flex = '0 0 auto';
+            }, { passive: false });
+            document.addEventListener('touchend', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = 'auto';
+                }
+            });
         } else {
             console.error("Splitter, panels, or container not found!");
+        }
+
+        const timerDisplay = document.getElementById('reading-timer');
+        if (timerDisplay) {
+            let timeInSeconds = 60 * 60; // 60 minutes
+            function updateTimer() {
+                const minutes = Math.floor(timeInSeconds / 60);
+                const seconds = timeInSeconds % 60;
+                timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                if (timeInSeconds > 0) {
+                    timeInSeconds--;
+                } else {
+                    clearInterval(timerInterval);
+                    alert("Time is up!");
+                    document.querySelector('form').submit();
+                }
+            }
+            const timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
         }
     });
 </script>

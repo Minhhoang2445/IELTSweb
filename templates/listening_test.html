@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="container mx-auto px-4 py-6">
 
     <!-- Header Bar (Sticky) -->
@@ -19,10 +20,12 @@
             <a href="{{ url_for('test.choose_test', category='Listening') }}"
                 class="bg-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-gray-300">Quay
                 lại</a>
+                <form method="POST" action="{{ url_for('test.submit_listening_answers', test_id=test.id) }}">
             <!-- Submit button (needs form wrapping and POST logic) -->
-            <button
-                class="bg-blue-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-blue-700">Nộp
-                bài</button>
+            <button type="submit"
+        class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+        Nộp bài
+    </button>
         </div>
     </div>
 
@@ -150,10 +153,7 @@
 
 <!-- Submit Button (Optional, can rely on header button) -->
 <div class="text-center mt-6">
-    <button type="submit"
-        class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-        Nộp bài
-    </button>
+    
 </div>
 </form> {# End Form #}
 
@@ -168,9 +168,8 @@
         Section {{ section_num }}
     </button>
     {% endfor %}
-</div>
-
-</div> {# End container #}
+ {# End container #}
+</form> <!-- Đóng form -->
 
 <!-- ===== JAVASCRIPT LOGIC (Inline) ===== -->
 <script>

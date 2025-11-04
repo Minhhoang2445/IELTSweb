@@ -26,6 +26,9 @@
                 {% if session.get('role') == 'admin' %}
                 <a href="{{ url_for('admin.admin_panel') }}"
                     class="text-gray-700 hover:text-indigo-600 font-medium">Admin</a>
+                {% elif session.get('role') == 'user' %}
+                <a href="{{ url_for('dashboard.user_dashboard') }}"
+                    class="text-gray-700 hover:text-indigo-600 font-medium">Dashboard</a>
                 {% endif %}
                 <div class="flex items-center space-x-3">
                     {% if session.get('user_name') %}

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Bảng điều khiển
+{% endblock %}
+
+{% block content %}
+<!-- (MỚI) Tải thư viện Chart.js để vẽ biểu đồ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
+
+    <!-- ===== CỘT BÊN TRÁI (SIDEBAR) ===== -->
+    <aside class="w-full md:w-64 bg-gray-800 text-white p-6 space-y-6 flex-shrink-0">
+        <h1 class="text-2xl font-bold mb-6">Bảng điều khiển</h1>
+
+        <nav class="space-y-3">
+            <!-- Link Lịch sử -->
+            <a href="{{ url_for('dashboard.user_dashboard', section='history') }}" class="block py-2 px-3 rounded transition
+                      {% if section == 'history' %} bg-blue-600 text-white {% else %} hover:bg-gray-700 {% endif %}">
+                📚 Lịch sử làm bài
+            </a>
+
+            <!-- Link Thống kê -->
+            <a href="{{ url_for('dashboard.user_dashboard', section='statistics') }}"
+                class="block py-2 px-3 rounded transition
+                      {% if section == 'statistics' %} bg-blue-600 text-white {% else %} hover:bg-gray-700 {% endif %}">
+                📊 Thống kê chung
+            </a>
+
+            <!-- Link Quay lại trang chủ -->
+            <a href="{{ url_for('index') }}" class="block py-2 px-3 rounded hover:bg-gray-700 transition">
+                🏠 Về trang chủ
+            </a>
+
+            <!-- Link Đăng xuất -->
+            <a href="{{ url_for('auth.logout') }}"
+                class="block py-2 px-3 rounded hover:bg-gray-700 transition text-red-400">
+                🚪 Đăng xuất
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ===== CỘT BÊN PHẢI (MAIN CONTENT) ===== -->
+    <main class="flex-1 p-8 overflow-y-auto">
+
+        <!-- ===== HIỂN THỊ PHẦN LỊCH SỬ LÀM BÀI ===== -->
+        {% if section == 'history' %}
+        <section id="history">
+            <h2 class="text-3xl font-semibold mb-6 text-gray-800">📚 Lịch sử làm bài</h2>
+            {% if all_results %}
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày làm</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên đề thi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loại</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Điểm số</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Xem lại</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in all_results %}
+                        <tr class="hover:bg-gray-50 border-b">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {{ result.taken_at.strftime('%d-%m-%Y %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ result.test.title }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                {% if result.test.category == 'Reading' %}
+                                <span
+                                    class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">Reading</span>
+                                {% else %}
+                                <span
+                                    class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Listening</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-800">
+                                {{ result.score|int }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                <a href="{{ url_for('test.show_test_result', result_id=result.id) }}"
+                                    class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                <p class="text-gray-600 italic">Bạn chưa hoàn thành bài test nào.</p>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <!-- ===== HIỂN THỊ PHẦN THỐNG KÊ CHUNG ===== -->
+        {% if section == 'statistics' %}
+        <section id="statistics">
+            <h2 class="text-3xl font-semibold mb-6 text-gray-800">📊 Thống kê chung</h2>
+
+            <!-- Grid 2 cột cho biểu đồ -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Biểu đồ Reading -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center"> Reading </h3>
+                    <canvas id="readingChart"></canvas>
+                </div>
+                <!-- Biểu đồ Listening -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center"> Listening </h3>
+                    <canvas id="listeningChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Grid 2 cột cho Lịch và Thống kê câu sai -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Lịch hoạt động -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">
+                        Lịch sử luyện tập ({{ calendar_data.month_name }} {{ calendar_data.year }})
+                    </h3>
+                    <div class="grid grid-cols-7 gap-1 text-center">
+                        {% for day_name in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                        <div class="font-medium text-xs text-gray-500">{{ day_name }}</div>
+                        {% endfor %}
+
+                        {% for week in calendar_data.weeks %}
+                        {% for day in week %}
+                        {% if day %}
+                        <div
+                            class="w-full h-10 flex items-center justify-center rounded
+                                   {% if day.is_today %} border-2 border-blue-500 {% else %} border border-gray-200 {% endif %}
+                                   {% if day.has_submission %} bg-green-500 text-white font-bold {% else %} bg-gray-50 text-gray-700 {% endif %}">
+                            {{ day.day }}
+                        </div>
+                        {% else %}
+                        <div></div>
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Thống kê câu sai theo loại -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Phân tích lỗi sai (Theo loại câu hỏi)</h3>
+                    <div class="space-y-4">
+                        {% if stats_data.question_type_stats %}
+                        {% for stat in stats_data.question_type_stats %}
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700">{{ stat.type_name }}</span>
+                                <span class="text-sm font-medium text-red-600">
+                                    {{ stat.wrong_percent }}% Sai ({{ stat.wrong_count }}/{{ stat.total }})
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-red-500 h-2.5 rounded-full" style="width: {{ stat.wrong_percent }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-gray-600 italic">Chưa có dữ liệu câu sai để phân tích.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+
+<!-- ===== JAVASCRIPT VẼ BIỂU ĐỒ ===== -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (document.getElementById('statistics')) {
+
+            function createChart(ctx, labels, scores, color) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Điểm số',
+                            data: scores,
+                            borderColor: color,
+                            backgroundColor: color + '33',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 40
+                            }
+                        },
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            // --- Reading ---
+            const readingCtx = document.getElementById('readingChart');
+            if (readingCtx) {
+                const readingLabels = {{ stats_data.last_5_reading_labels | default ('[]') | safe
+                }};
+        const readingScores = {{ stats_data.last_5_reading_scores | default ('[]') | safe
+    }};
+    createChart(readingCtx, readingLabels, readingScores, '#2563eb');
+        }
+
+    // --- Listening ---
+    const listeningCtx = document.getElementById('listeningChart');
+    if (listeningCtx) {
+        const listeningLabels = {{ stats_data.last_5_listening_labels | default ('[]') | safe }};
+    const listeningScores = {{ stats_data.last_5_listening_scores | default ('[]') | safe }};
+    createChart(listeningCtx, listeningLabels, listeningScores, '#16a34a');
+        }
+    }
+});
+</script>
+{% endblock %}

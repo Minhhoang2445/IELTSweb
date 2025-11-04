@@ -27,14 +27,8 @@ def allowed_file(filename):
 
 
 def parse_and_save_test(form_data, files_data):
-    """
-    Hàm này nhận request.form và request.files, phân loại, xác thực, xử lý file upload và lưu vào DB.
-    Trả về (True, "Thông báo thành công") hoặc (False, "Thông báo lỗi").
-    """
-    # (Optional Debug Print)
-    # print("\n--- DEBUG: Bắt đầu parse_and_save_test ---")
-    # pprint.pprint({"form_data_keys": list(form_data.keys()), "files_data_keys": list(files_data.keys())})
-
+    
+    
     try:
         category = form_data.get('category')
         test_title = form_data.get('title')
