@@ -8,7 +8,6 @@ auth = Blueprint('auth', __name__, template_folder='templates',
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        print("Người dùng vừa ấn nút Đăng ký!")
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']

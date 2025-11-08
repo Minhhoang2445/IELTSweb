@@ -49,12 +49,11 @@ def choose_test(category):
         category=valid_category).all()
     return render_template(
         'choose_test.html',
-        # Truyền category đã chuẩn hóa ('Reading' hoặc 'Listening')
         current_category=valid_category,
-        tests=tests_in_category,          # Danh sách test chính để hiển thị
-        latest_reading=latest_reading_tests,    # Cho dropdown Reading sidebar
-        latest_listening=latest_listening_tests,  # Cho dropdown Listening sidebar
-        start_test_endpoint=start_test_endpoint  # Tên route để bắt đầu làm bài
+        tests=tests_in_category,          
+        latest_reading=latest_reading_tests,    
+        latest_listening=latest_listening_tests,  
+        start_test_endpoint=start_test_endpoint  
     )
 
 

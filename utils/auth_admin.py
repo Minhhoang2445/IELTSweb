@@ -214,10 +214,7 @@ def inject_utils():
 @admin_bp.route('/view_test/<int:test_id>')
 def view_test(test_id):
     """Hiển thị trang xem lại (read-only) một đề thi."""
-    if session.get('role') != 'admin':
-        flash("Bạn không có quyền truy cập trang này.", 'error')
-        return redirect(url_for('index'))
-
+   
     test = Test.query.get(test_id)
     if not test:
         flash("Đề thi không tồn tại.", 'error')
