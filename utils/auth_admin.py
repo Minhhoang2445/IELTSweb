@@ -1,33 +1,22 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
-# (SỬA) Import model từ đúng file 'test_manage'
-from utils.data_manage import Test, Passage, QuestionBlock, User
-# Giả sử hàm này vẫn tồn tại để load user CSV
+from utils.data_manage import Test, Passage, QuestionBlock, User, UserTestResult, UserAnswer
 from utils.users_manage import load_data
 import json
 from utils.extensions import db
-# Thêm import để xử lý tên file an toàn
 from werkzeug.utils import secure_filename
-import os  # Thêm import os
+import os  
 import json 
 admin_bp = Blueprint(
     'admin', __name__, template_folder='templates', static_folder='static')
 
-# --- Cấu hình cho Upload ---
-ALLOWED_EXTENSIONS = {'mp3'}  # Chỉ cho phép mp3
+ALLOWED_EXTENSIONS = {'mp3'}  
 
 
 def allowed_file(filename):
-    """Kiểm tra xem file có đuôi mở rộng hợp lệ không."""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# -----------------------------------------------------------------
-# HÀM HELPER: "PHÂN LOẠI CÂU HỎI VÀ LƯU TEST" (Đã cập nhật)
-# -----------------------------------------------------------------
-
-
 def parse_and_save_test(form_data, files_data):
-    
     
     try:
         category = form_data.get('category')
@@ -54,9 +43,7 @@ def parse_and_save_test(form_data, files_data):
                     return (False, f"Lỗi nghiêm trọng khi lưu file audio: {save_err}")
             else:
                 return (False, "Lỗi: Loại file audio không hợp lệ (chỉ chấp nhận .mp3).")
-        # --- Kết thúc xử lý file upload ---
 
-        # 1. Gom dữ liệu câu hỏi (Logic cũ)
         passages_data = {}
         for key, value in form_data.items():
             value_cleaned = value.strip() if isinstance(value, str) else value
@@ -87,10 +74,8 @@ def parse_and_save_test(form_data, files_data):
                             current_level = current_level[sub_part]
                         current_level[parts[-1]] = value_cleaned
                 except (IndexError, KeyError) as e_parse:
-                    # Log warning properly in production
                     pass
 
-        # 2. Lọc và Xác thực dữ liệu đã gom (Logic cũ)
         valid_passages_with_questions = []
         total_valid_questions = 0
         MAX_QUESTIONS_PER_TEST = 40
@@ -114,24 +99,19 @@ def parse_and_save_test(form_data, files_data):
                 stored_passage_text = passage_text_value if category == 'Reading' else f"Listening Section {p_id} Data"
                 valid_passages_with_questions.append(( {'text': stored_passage_text}, valid_question_blocks_in_passage) )
 
-        # 3. Kiểm tra số lượng tổng (Logic cũ)
         if not valid_passages_with_questions:
             return (False, "Lỗi: Đề thi phải có ít nhất 1 Passage/Section chứa câu hỏi hợp lệ.")
         if total_valid_questions > MAX_QUESTIONS_PER_TEST:
             return (False, f"Lỗi: Tổng số câu hỏi hợp lệ ({total_valid_questions}) vượt quá giới hạn {MAX_QUESTIONS_PER_TEST}.")
 
-        # 4. Lưu Test (ĐÃ SỬA)
-        # Chỉ thêm audio_url nếu là Listening VÀ saved_audio_url có giá trị
         if category == 'Listening' and saved_audio_url:
             new_test = Test(title=test_title, category=category, audio_url=saved_audio_url)
         else:
-            # Nếu là Reading hoặc Lưu Listening thất bại, không thêm audio_url
             new_test = Test(title=test_title, category=category)
     
         db.session.add(new_test)
         db.session.flush()  # Lấy ID
 
-        # 5. Lặp qua các PASSAGE HỢP LỆ và câu hỏi của chúng để lưu (Logic cũ)
         for i, (passage_info, valid_blocks) in enumerate(valid_passages_with_questions):
             new_passage = Passage(
                 passage_text=passage_info['text'],
@@ -144,7 +124,6 @@ def parse_and_save_test(form_data, files_data):
                 q_type = block_data.get('type')
                 extra_data_dict = {}
 
-                # Xử lý extra_data (logic cũ)
                 if q_type == 'multiple_choice':
                     options_dict = block_data.get('options', {})
                     valid_options = [opt for opt in options_dict.values() if opt]
@@ -170,15 +149,12 @@ def parse_and_save_test(form_data, files_data):
                 )
                 db.session.add(new_block)
 
-        # 6. Lưu tất cả vào DB (Logic cũ)
         db.session.commit()
         success_message = f"Đã thêm đề thi '{new_test.title}' với {len(valid_passages_with_questions)} passage/section và tổng cộng {total_valid_questions} câu hỏi!"
         return (True, success_message)
 
     except Exception as e:
         db.session.rollback()
-        # Log lỗi hoặc in traceback để debug
-        # traceback.print_exc()
         error_msg = f"Có lỗi xảy ra trong quá trình xử lý: {str(e)[:150]}..."
         return (False, error_msg)
 
@@ -207,7 +183,6 @@ def delete_test(test_id):
 @admin_bp.app_context_processor
 def inject_utils():
     """Đưa các hàm/module tiện ích vào template Jinja2."""
-    # Hàm này cho phép bạn gọi 'json.loads(text)' bên trong file HTML
     return dict(json=json)
 
 
@@ -219,22 +194,66 @@ def view_test(test_id):
     if not test:
         flash("Đề thi không tồn tại.", 'error')
         return redirect(url_for('admin.admin_panel', section='view_tests'))
-
-    # Sắp xếp các passage và question theo ID để đảm bảo thứ tự
-    # (Phòng trường hợp database trả về không theo thứ tự)
     try:
         sorted_passages = sorted(test.passages, key=lambda p: p.id)
         for p in sorted_passages:
-            # Gán danh sách đã sắp xếp vào một thuộc tính mới
             p.sorted_questions = sorted(p.question_blocks, key=lambda q: q.id)
     except Exception:
-        # Fallback nếu ID không phải lúc nào cũng là số (ví dụ: khi test)
         sorted_passages = test.passages
         for p in sorted_passages:
             p.sorted_questions = p.question_blocks
 
     return render_template('view_test.html', test=test, sorted_passages=sorted_passages)
 
+
+@admin_bp.route('/delete_user/<int:user_id>', methods=['GET'])
+def delete_user(user_id):
+    """Xóa một người dùng (nếu không phải là admin hiện tại)."""
+    if session.get('role') != 'admin':
+        flash("Bạn không có quyền truy cập trang này.", 'error')
+        return redirect(url_for('index'))
+
+    if user_id == session.get('user_id'):
+        flash("Bạn không thể xóa tài khoản của chính mình.", 'error')
+        return redirect(url_for('admin.admin_panel', section='users'))
+
+    user_to_delete = User.query.get(user_id)
+    if not user_to_delete:
+        flash("Người dùng không tồn tại.", 'error')
+        return redirect(url_for('admin.admin_panel', section='users'))
+
+    try:
+       
+        UserTestResult.query.filter_by(user_id=user_id).delete()
+
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        flash(
+            f"Đã xóa người dùng '{user_to_delete.name}' và các kết quả bài làm liên quan.", 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Lỗi khi xóa người dùng: {str(e)}", 'error')
+
+    return redirect(url_for('admin.admin_panel', section='users'))
+
+
+@admin_bp.route('/view_user/<int:user_id>')
+def view_user(user_id):
+    """Hiển thị trang thông tin chi tiết của người dùng."""
+    if session.get('role') != 'admin':
+        flash("Bạn không có quyền truy cập.", 'error')
+        return redirect(url_for('index'))
+
+    user = User.query.get_or_404(user_id)
+    
+    try:
+        sorted_results = sorted(
+            user.test_results, key=lambda r: r.taken_at, reverse=True)
+    except AttributeError:
+        sorted_results = UserTestResult.query.filter_by(
+            user_id=user.id).order_by(UserTestResult.taken_at.desc()).all()
+
+    return render_template('view_user.html', user=user, results=sorted_results)
 
 @admin_bp.route('/', methods=['GET', 'POST'])
 def admin_panel():
@@ -250,7 +269,6 @@ def admin_panel():
             flash(message, 'error')
         return redirect(url_for('admin.admin_panel', section='add_test'))
 
-    # Logic GET không đổi
     list_users = []
     list_tests = []
     section = request.args.get('section', 'users')

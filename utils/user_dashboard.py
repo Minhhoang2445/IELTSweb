@@ -8,10 +8,7 @@ import json
 
 dashboard_bp = Blueprint('dashboard', __name__,
                          template_folder='templates',
-                         url_prefix='/dashboard')  # Đặt tiền tố /dashboard cho tất cả route
-
-# Hàm helper để chuẩn bị dữ liệu lịch
-
+                         url_prefix='/dashboard')  
 
 def get_calendar_data(submission_dates_set, year, month):
     """Tạo dữ liệu cho 1 tháng: (ngày, có_làm_bài, là_ngày_hôm_nay)"""
@@ -21,7 +18,7 @@ def get_calendar_data(submission_dates_set, year, month):
 
     for day in cal.itermonthdates(year, month):
         if day.month != month:
-            month_days.append(None)  # Ngày thuộc tháng khác
+            month_days.append(None)  
         else:
             date_str = day.strftime('%Y-%m-%d')
             is_today = (day == today)
@@ -31,15 +28,39 @@ def get_calendar_data(submission_dates_set, year, month):
                 'has_submission': has_submission,
                 'is_today': is_today
             })
-    # Chia thành các tuần (7 ngày)
     weeks = [month_days[i:i + 7] for i in range(0, len(month_days), 7)]
     return weeks
+
+
+@dashboard_bp.route('/profile/update', methods=['POST'])
+def profile_update():
+    """Xử lý cập nhật thông tin cá nhân (tên)."""
+    if 'email' not in session:
+        flash("Bạn cần đăng nhập để thực hiện việc này.", "error")
+        return redirect(url_for('auth.login'))
+
+    user = User.query.filter_by(email=session['email']).first()
+    if not user:
+        flash("Lỗi xác thực người dùng.", "error")
+        return redirect(url_for('auth.logout'))
+
+    new_name = request.form.get('name')
+    if new_name and new_name.strip() and new_name != user.name:
+        user.name = new_name.strip()
+        db.session.commit()
+        session['user_name'] = user.name
+        flash("Đã cập nhật tên của bạn thành công!", "success")
+    elif new_name == user.name:
+        flash("Tên mới giống tên cũ, không có gì thay đổi.", "info")
+    else:
+        flash("Tên không thể để trống.", "error")
+
+    return redirect(url_for('dashboard.user_dashboard', section='profile'))
 
 
 @dashboard_bp.route('/')
 def user_dashboard():
     """Hiển thị trang dashboard chính của người dùng"""
-    # 1. Xác thực người dùng
     if 'email' not in session:
         flash("Bạn cần đăng nhập để xem trang này.", "error")
         return redirect(url_for('auth.login'))
@@ -49,35 +70,26 @@ def user_dashboard():
         flash("Lỗi xác thực người dùng.", "error")
         return redirect(url_for('auth.logout'))
 
-    # 2. Lấy section từ URL (mặc định là 'history')
     section = request.args.get('section', 'history')
-
-    # 3. Chuẩn bị dữ liệu
     all_results = None
     stats_data = {}
     calendar_data = {}
 
-    # Lấy TẤT CẢ kết quả làm bài của user (dùng cho cả 2 section)
     all_results = UserTestResult.query.filter_by(
         user_id=user.id).order_by(UserTestResult.taken_at.desc()).all()
 
     if section == 'statistics':
-        # --- 1. Lấy dữ liệu cho 2 Biểu đồ 5 bài gần nhất ---
         last_5_reading = UserTestResult.query.join(Test).filter(
             Test.category == 'Reading', UserTestResult.user_id == user.id
-            # [::-1] để đảo ngược (cũ nhất trước)
         ).order_by(UserTestResult.taken_at.desc()).limit(5).all()[::-1]
 
         last_5_listening = UserTestResult.query.join(Test).filter(
             Test.category == 'Listening', UserTestResult.user_id == user.id
-            # Đảo ngược
         ).order_by(UserTestResult.taken_at.desc()).limit(5).all()[::-1]
 
-        # --- 2. Lấy dữ liệu Lịch (Calendar Heatmap) ---
         submission_dates_set = {result.taken_at.strftime(
             '%Y-%m-%d') for result in all_results}
         today = date.today()
-        # Lấy tháng và năm hiện tại, có thể cho user chọn sau
         cal_year = request.args.get('year', today.year, type=int)
         cal_month = request.args.get('month', today.month, type=int)
 
@@ -87,8 +99,6 @@ def user_dashboard():
             'year': cal_year
         }
 
-        # --- 3. Lấy dữ liệu Thống kê câu sai theo loại ---
-        # Query này lấy: (loại câu hỏi, có đúng không)
         type_results = db.session.query(
             QuestionBlock.question_type, UserAnswer.is_correct
         ).join(UserAnswer).join(UserTestResult).filter(
@@ -96,9 +106,7 @@ def user_dashboard():
         ).all()
 
         question_type_stats = {}
-        # Đếm tổng số câu đúng/sai cho từng loại
         for r in type_results:
-            # 'fill_in_blank' -> 'Fill In Blank'
             q_type = r.question_type.replace("_", " ").title()
             if q_type not in question_type_stats:
                 question_type_stats[q_type] = {'correct': 0, 'total': 0}
@@ -107,7 +115,6 @@ def user_dashboard():
                 question_type_stats[q_type]['correct'] += 1
             question_type_stats[q_type]['total'] += 1
 
-        # Tính toán % và số câu sai
         stats_list = []
         for q_type, data in question_type_stats.items():
             if data['total'] > 0:
@@ -117,10 +124,8 @@ def user_dashboard():
                 data['type_name'] = q_type
                 stats_list.append(data)
 
-        # Sắp xếp theo % sai nhiều nhất
         stats_list.sort(key=lambda x: x['wrong_percent'], reverse=True)
 
-        # Đóng gói dữ liệu stats
         stats_data = {
             'last_5_reading_labels': json.dumps([r.test.title for r in last_5_reading]),
             'last_5_reading_scores': json.dumps([r.score for r in last_5_reading]),
@@ -131,6 +136,7 @@ def user_dashboard():
 
     return render_template('user.html',
                            section=section,
+                           user=user,  
                            all_results=all_results,
                            stats_data=stats_data,
                            calendar_data=calendar_data

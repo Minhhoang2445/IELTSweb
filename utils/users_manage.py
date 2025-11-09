@@ -3,7 +3,6 @@ import os
 from utils.extensions import db
 from utils.data_manage import User
 from werkzeug.security import generate_password_hash, check_password_hash
-# Đường dẫn tuyệt đối đến file CSV (dựa trên vị trí file data_manage.py)
 
 
 
@@ -18,18 +17,15 @@ def load_data():
 
 def add_user(name, email, password):
     try:
-        # (Rất quan trọng) Băm mật khẩu để bảo mật
         hashed_password = generate_password_hash(password)
 
-        # Tạo đối tượng User mới
         new_user = User(
             name=name,
             email=email,
             password=hashed_password,
-            role='user'  # Giữ nguyên logic cũ, mặc định là 'user'
+            role='user'  
         )
 
-        # Thêm vào session và lưu vào database
         db.session.add(new_user)
         db.session.commit()
 

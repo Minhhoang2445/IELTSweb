@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Thông tin: {{ user.name }}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-8 max-w-4xl">
+
+    <!-- Header và Nút Quay Lại -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-indigo-700">Thông tin người dùng</h1>
+        <a href="{{ url_for('admin.admin_panel', section='users') }}"
+            class="bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded hover:bg-gray-300 transition">
+            &larr; Quay lại danh sách
+        </a>
+    </div>
+
+    <!-- ===== KHỐI FLASH (Đầy đủ) ===== -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for category, message in messages %}
+        {% set alert_class = 'bg-red-100 border-red-400 text-red-700' if category == 'error' else
+        'bg-green-100 border-green-400 text-green-700' %}
+        <div class="{{ alert_class }} border px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Thẻ Thông Tin Chi Tiết -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Chi tiết</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <strong class="text-gray-600">ID người dùng:</strong>
+                <p class="text-gray-800">{{ user.id }}</p>
+            </div>
+            <div>
+                <strong class="text-gray-600">Họ và Tên:</strong>
+                <p class="text-gray-800">{{ user.name }}</p>
+            </div>
+            <div>
+                <strong class="text-gray-600">Email:</strong>
+                <p class="text-gray-800">{{ user.email }}</p>
+            </div>
+            <div>
+                <strong class="text-gray-600">Vai trò (Role):</strong>
+                <p
+                    class="text-gray-800 uppercase font-medium {{ 'text-red-600' if user.role == 'admin' else 'text-blue-600' }}">
+                    {{ user.role }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Lịch Sử Làm Bài -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Lịch sử làm bài</h2>
+        {% if results %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300 bg-white">
+                <thead class="bg-indigo-100">
+                    <tr>
+                        <th class="px-4 py-2 border text-left">Tên đề thi</th>
+                        <th class="px-4 py-2 border text-left">Loại</th>
+                        <th class="px-4 py-2 border text-center">Điểm số</th>
+                        <th class="px-4 py-2 border text-left">Ngày làm bài</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 border">
+                            <!-- Link đến bài test (nếu có) hoặc chỉ là text -->
+                            {{ result.test.title if result.test else 'N/A' }}
+                        </td>
+                        <td class="px-4 py-2 border">
+                            {{ result.test.category if result.test else 'N/A' }}
+                        </td>
+                        <td class="px-4 py-2 border text-center font-medium"> {{ result.score | int}} / 40</td>
+                        <td class="px-4 py-2 border text-sm">{{ result.taken_at.strftime('%H:%M - %d/%m/%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-600 italic">Người dùng này chưa hoàn thành bài test nào.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

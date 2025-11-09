@@ -54,6 +54,7 @@ Admin Panel
                             <th class="px-4 py-2 border text-left">Tên</th>
                             <th class="px-4 py-2 border text-left">Email</th>
                             <th class="px-4 py-2 border text-left">Role</th>
+                            <th class="px-4 py-2 border text-center">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,6 +63,18 @@ Admin Panel
                             <td class="px-4 py-2 border">{{ user.name }}</td>
                             <td class="px-4 py-2 border">{{ user.email }}</td>
                             <td class="px-4 py-2 border">{{ user.role }}</td>
+                            <td class="px-4 py-2 border" >
+                                <a href="{{ url_for('admin.view_user', user_id=user.id) }}"
+                                    class="text-blue-600 hover:underline text-sm mr-2">Xem</a>
+
+                                {% if user.id != session.user_id %}
+                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                                    class="text-red-600 hover:underline text-sm"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng này không? Tất cả kết quả làm bài của họ cũng sẽ bị xóa.');">Xóa</a>
+                                {% else %}
+                                <span class="text-gray-400 text-sm">(Bạn)</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -152,9 +165,10 @@ Admin Panel
                             <td class="px-4 py-2 border text-center">{{ test.user_results | length }}</td>
                             <td class="px-4 py-2 border text-center">
                                 <!-- Thêm link Xem chi tiết/Sửa/Xóa sau -->
-                                <a href="{{ url_for('admin.view_test', test_id=test.id) }}" class="text-blue-600 hover:underline text-sm">Xem</a>
+                                <a href="{{ url_for('admin.view_test', test_id=test.id) }}"
+                                    class="text-blue-600 hover:underline text-sm">Xem</a>
 
-                                <a  href="{{ url_for('admin.delete_test', test_id=test.id) }}"
+                                <a href="{{ url_for('admin.delete_test', test_id=test.id) }}"
                                     class="text-red-600 hover:underline text-sm"
                                     onclick="return confirm('Bạn có chắc chắn muốn xóa đề thi này không?');">Xóa</a>
                             </td>

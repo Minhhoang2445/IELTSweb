@@ -27,7 +27,10 @@ Bảng điều khiển
                       {% if section == 'statistics' %} bg-blue-600 text-white {% else %} hover:bg-gray-700 {% endif %}">
                 📊 Thống kê chung
             </a>
-
+            <a href="{{ url_for('dashboard.user_dashboard', section='profile') }}" class="block py-2 px-3 rounded transition
+                                    {% if section == 'profile' %} bg-blue-600 text-white {% else %} hover:bg-gray-700 {% endif %}">
+                👤 Thông tin cá nhân
+            </a>
             <!-- Link Quay lại trang chủ -->
             <a href="{{ url_for('index') }}" class="block py-2 px-3 rounded hover:bg-gray-700 transition">
                 🏠 Về trang chủ
@@ -99,7 +102,61 @@ Bảng điều khiển
             {% endif %}
         </section>
         {% endif %}
+{% if section == 'profile' %}
+<section id="profile">
+    <h2 class="text-3xl font-semibold mb-6 text-gray-800">👤 Thông tin cá nhân</h2>
 
+    <!-- Khối flash message (nếu có) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for category, message in messages %}
+        {% set alert_class = 'bg-red-100 border-red-400 text-red-700' if category == 'error' else
+        ('bg-green-100 border-green-400 text-green-700' if category == 'success' else
+        'bg-blue-100 border-blue-400 text-blue-700') %}
+        <div class="{{ alert_class }} border px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Form cập nhật -->
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg">
+        <form method="POST" action="{{ url_for('dashboard.profile_update') }}" class="space-y-4">
+
+            <!-- Thông tin cá nhân -->
+            <fieldset class="border rounded p-4">
+                <legend class="text-lg font-semibold text-gray-700 px-2">Thông tin tài khoản</legend>
+                <div class="space-y-4 mt-2">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Email (Không thể thay đổi):</label>
+                        <input type="email" value="{{ user.email }}"
+                            class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+                            disabled>
+                    </div>
+                    <div>
+                        <label for="name" class="block text-gray-700 mb-2">Tên hiển thị:</label>
+                        <input type="text" id="name" name="name" value="{{ user.name }}"
+                            class="w-full border rounded px-3 py-2 focus:ring focus:ring-blue-200" required>
+                    </div>
+                </div>
+            </fieldset>
+
+        
+
+            <!-- Nút Submit -->
+            <div class="text-right">
+                <button type="submit"
+                    class="bg-blue-600 text-white font-medium px-6 py-2 rounded hover:bg-blue-700 transition">
+                    Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endif %}
         <!-- ===== HIỂN THỊ PHẦN THỐNG KÊ CHUNG ===== -->
         {% if section == 'statistics' %}
         <section id="statistics">

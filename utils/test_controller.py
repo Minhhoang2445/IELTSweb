@@ -17,7 +17,6 @@ def get_sort_key(block):
     except:
         return 0
 
-# (MỚI) HÀM HELPER ĐỂ "GIẢI NÉN" DẢI CÂU HỎI
 
 
 def parse_range(range_str):
@@ -31,10 +30,8 @@ def parse_range(range_str):
             end = int(parts[1].strip())
             return list(range(start, end + 1))
         else:
-            # Nếu chỉ là một số (ví dụ: '6')
             return [int(range_str.strip())]
     except:
-        # Fallback nếu range_str không hợp lệ
         return [range_str]
 
 @test_bp.route('/choose_test/<category>')
@@ -69,13 +66,11 @@ def reading_test_page(test_id):
     if test.category != 'Reading':
         abort(404)
 
-    # Xử lý JSON VÀ SẮP XẾP VÀ GIẢI NÉN RANGE
     for passage in test.passages:
         if passage.question_blocks:
-            passage.question_blocks.sort(key=get_sort_key) # Sắp xếp
+            passage.question_blocks.sort(key=get_sort_key) 
 
         for block in passage.question_blocks:
-            # Xử lý JSON (giữ nguyên)
             if block.extra_data:
                 try:
                     block.extra_data_dict = json.loads(block.extra_data)
@@ -84,12 +79,11 @@ def reading_test_page(test_id):
             else:
                 block.extra_data_dict = {}
 
-            # (MỚI) Gọi hàm parse_range để tạo list số câu hỏi
             block.question_numbers = parse_range(block.question_range)
     return render_template('reading_test.html', test=test)
 
 
-@test_bp.route('/listening_page/<int:test_id>')  # URL sẽ là /listening_page/1
+@test_bp.route('/listening_page/<int:test_id>')  
 def listening_test_page(test_id):
     if 'email' not in session:
         flash("Bạn cần đăng nhập để làm test.", "error")
@@ -102,16 +96,13 @@ def listening_test_page(test_id):
     if test.category != 'Listening':
         abort(404)
 
-    # (SỬA) Gom câu hỏi từ TẤT CẢ passages (sections)
     all_question_blocks = []
     if test.passages:
         for passage in test.passages:
             all_question_blocks.extend(passage.question_blocks)
 
-        # Sắp xếp lại toàn bộ danh sách
         all_question_blocks.sort(key=get_sort_key)
 
-    # Xử lý JSON (bây giờ dùng all_question_blocks)
     for block in all_question_blocks:
         if block.extra_data:
             try:
@@ -145,7 +136,6 @@ def submit_reading_answers(test_id):
         db.joinedload(Test.passages).joinedload(Passage.question_blocks)
     ).get_or_404(test_id)
 
-    # 3. Xây dựng bản đồ đáp án đúng
     correct_answers_map = {}
     total_questions_count = 0
 
@@ -154,21 +144,17 @@ def submit_reading_answers(test_id):
             extra_data_dict = json.loads(
                 block.extra_data) if block.extra_data else {}
 
-            # Case 1: Câu hỏi nhóm (Matching, v.v.)
             if 'sub_questions' in extra_data_dict:
                 for i, sub_q in enumerate(extra_data_dict['sub_questions']):
                     correct_answers_map.setdefault(block.id, {})[
                         i] = sub_q['answer']
                     total_questions_count += 1
 
-            # Case 2: (SỬA) Câu hỏi đơn (MC, Fill, T/F)
             else:
-                # Chỉ có 1 câu trả lời, lưu ở sub_index = 0
                 correct_answers_map.setdefault(block.id, {})[
                     0] = block.simple_answer
                 total_questions_count += 1  # Chỉ đếm là 1 câu hỏi
 
-    # 4. Chấm điểm và Chuẩn bị lưu
     score = 0
     answers_to_save = []
 
@@ -197,9 +183,6 @@ def submit_reading_answers(test_id):
 
             is_correct = False
             if user_ans_val and correct_ans_val:
-                # (SỬA) Logic so sánh
-                # Nếu là câu hỏi đơn (Fill 1-5), đáp án đúng có thể là "ans1, ans2, ans3"
-                # Logic này cần được cải thiện sau, tạm thời so sánh toàn bộ
                 if user_ans_val.lower() == correct_ans_val.lower():
                     is_correct = True
                     score += 1
@@ -223,8 +206,6 @@ def submit_reading_answers(test_id):
 
 @test_bp.route('/submit_listening/<int:test_id>', methods=['POST'])
 def submit_listening_answers(test_id):
-    # Logic 1-5 giống hệt submit_reading_answers
-    # 1. Xác thực người dùng
     if 'email' not in session:
         flash("Bạn cần đăng nhập để nộp bài.", "error")
         return redirect(url_for('auth.login'))
@@ -234,17 +215,14 @@ def submit_listening_answers(test_id):
         return redirect(url_for('auth.login'))
     user_id = current_user.id
 
-    # 2. Lấy dữ liệu
     user_answers_raw = request.form
     test = Test.query.options(
         db.joinedload(Test.passages).joinedload(Passage.question_blocks)
     ).get_or_404(test_id)
 
-    # 3. Xây dựng bản đồ đáp án đúng (Correct Answer Map)
     correct_answers_map = {}
     total_questions_count = 0
 
-    # Logic lấy đáp án đúng là như nhau cho cả Reading và Listening
     for passage in test.passages:
         for block in passage.question_blocks:
             extra_data_dict = json.loads(
@@ -259,7 +237,6 @@ def submit_listening_answers(test_id):
                     0] = block.simple_answer
                 total_questions_count += 1
 
-    # 4. Chấm điểm và Chuẩn bị lưu
     score = 0
     answers_to_save = []
     new_test_result = UserTestResult(
@@ -293,15 +270,11 @@ def submit_listening_answers(test_id):
             )
             answers_to_save.append(new_answer)
 
-    # 5. Lưu vào Database
     db.session.add_all(answers_to_save)
     new_test_result.score = score
     db.session.commit()
 
     return redirect(url_for('test.show_test_result', result_id=new_test_result.id))
-# -----------------------------------------------------------------
-# (MỚI) ROUTE HIỂN THỊ KẾT QUẢ (ĐÃ SỬA)
-# -----------------------------------------------------------------
 
 
 @test_bp.route('/test_result/<int:result_id>')
@@ -313,21 +286,19 @@ def show_test_result(result_id):
     if not current_user or (result.user_id != current_user.id and session.get('role') != 'admin'):
         return redirect(url_for('index'))
 
-    # Xây dựng lại bản đồ đáp án đúng
     correct_answers_map = {}
     total_questions = 0
     test = result.test
     
-    # Tạo một dict map block_id -> block để dễ tra cứu
     all_blocks = {} 
     
     for passage in test.passages:
         if passage.question_blocks:
              passage.question_blocks.sort(key=get_sort_key)
         for block in passage.question_blocks:
-            all_blocks[block.id] = block # Thêm block vào map
+            all_blocks[block.id] = block 
             extra_data_dict = json.loads(block.extra_data) if block.extra_data else {}
-            block.extra_data_dict = extra_data_dict # Gán lại để dùng sau
+            block.extra_data_dict = extra_data_dict 
             
             if 'sub_questions' in extra_data_dict:
                 for i, sub_q in enumerate(extra_data_dict['sub_questions']):
@@ -337,28 +308,24 @@ def show_test_result(result_id):
                 correct_answers_map.setdefault(block.id, {})[0] = block.simple_answer
                 total_questions += 1
     
-    # Lấy câu trả lời chi tiết của user và sắp xếp
     answers_with_details = []
-    # Lấy các câu trả lời của user cho lần làm bài này
     user_answers = UserAnswer.query.filter_by(user_test_result_id=result.id).all()
     
-    # Sắp xếp câu trả lời của user DỰA TRÊN THỨ TỰ CỦA QUESTION BLOCK
     user_answers.sort(key=lambda ans: (
-        get_sort_key(all_blocks.get(ans.question_block_id, ans)), # Sắp xếp theo block
-        ans.sub_question_index # Sắp xếp theo câu con
+        get_sort_key(all_blocks.get(ans.question_block_id, ans)), 
+        ans.sub_question_index 
     ))
 
     for answer in user_answers:
         block = all_blocks.get(answer.question_block_id)
         if not block:
-            continue # Bỏ qua nếu không tìm thấy block (lỗi dữ liệu)
+            continue 
             
         block_id = answer.question_block_id
         sub_index = answer.sub_question_index
         correct_ans = correct_answers_map.get(block_id, {}).get(sub_index, "N/A")
         
-        # (SỬA) Lấy thông tin chi tiết cho template
-        query_label = f"Câu hỏi {block.question_range}" # Mặc định
+        query_label = f"Câu hỏi {block.question_range}" 
         instruction = block.instruction_text
         options = []
         
@@ -367,22 +334,21 @@ def show_test_result(result_id):
                 query_label = block.extra_data_dict['sub_questions'][sub_index]['query']
             elif block.question_type == 'multiple_choice':
                 options = block.extra_data_dict.get('options', [])
-                query_label = block.instruction_text # Câu hỏi MC là instruction
-            else: # Fill, T/F
+                query_label = block.instruction_text 
+            else: 
                 query_label = f"Câu {parse_range(block.question_range)[sub_index]}"
         except Exception:
             pass 
         
         answers_with_details.append({
-            'query_label': query_label, # Nhãn câu hỏi (Câu 1, 14. reference...)
-            'instruction': instruction, # Hướng dẫn chung (Which section contains...)
+            'query_label': query_label, 
+            'instruction': instruction,
             'question_type': block.question_type,
             'user_answer': answer.user_answer,
             'correct_answer': correct_ans,
             'is_correct': answer.is_correct
         })
     
-    # Tính điểm Band (Logic đơn giản)
     score = result.score
     band_score = 1.0
     if total_questions == 40: 
@@ -401,6 +367,6 @@ def show_test_result(result_id):
     
     return render_template('test_result.html', 
                            result=result, 
-                           answers=answers_with_details, # Gửi dữ liệu chi tiết
+                           answers=answers_with_details, 
                            total_questions=total_questions,
                            band_score=band_score)
